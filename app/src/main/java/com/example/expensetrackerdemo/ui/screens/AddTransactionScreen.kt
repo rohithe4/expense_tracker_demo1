@@ -5,6 +5,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -635,19 +637,11 @@ private fun AmountEntrySheet(
                 style = BodyMd.copy(color = ColorText, fontWeight = FontWeight.Medium)
             )
 
-            // Large Amount Display (Rolling Counter)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text("₹", style = TitleLg.copy(fontSize = 32.sp, color = ColorTextMuted))
-                Spacer(Modifier.width(8.dp))
-                RollingAmountDisplay(
-                    amount = if (amount.isEmpty()) "0.00" else amount,
-                    isAdding = isAdding,
-                    isPlaceholder = amount.isEmpty()
-                )
-            }
+            // Large Amount Display (Integrated Rolling Counter)
+            RollingAmountDisplay(
+                amount = amount,
+                isAdding = isAdding
+            )
 
             // Custom Keypad
             Column(
@@ -719,51 +713,105 @@ private fun AmountEntrySheet(
 @Composable
 private fun RollingAmountDisplay(
     amount: String,
-    isAdding: Boolean,
-    isPlaceholder: Boolean
+    isAdding: Boolean
 ) {
-    val tokens = getAmountTokens(amount)
+    val hasInitialized = remember { mutableStateOf(false) }
     
-    LazyRow(
-        modifier = Modifier.clipToBounds(),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center,
-        userScrollEnabled = false
-    ) {
-        items(tokens, key = { it.key }) { token ->
-            DigitSlot(
-                char = token.char,
-                isAdding = isAdding,
-                isPlaceholder = isPlaceholder,
-                isInitialDigit = amount.length <= 1,
-                key = token.key,
-                modifier = Modifier.animateItem(
-                    placementSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
-                    fadeInSpec = null, // Handled by DigitSlot's AnimatedContent
-                    fadeOutSpec = null
-                )
+    // We wrap the entire block (Currency + Amount) in AnimatedContent to ensure
+    // it transitions as a single centered unit, preventing horizontal jitter or "splitting".
+    AnimatedContent(
+        targetState = amount.isEmpty(),
+        transitionSpec = {
+            val duration = 240
+            if (targetState) {
+                // Return to placeholder: Scale down the whole amount unit toward its center
+                (scaleIn(initialScale = 1.1f, animationSpec = tween(duration)) + fadeIn(tween(duration)))
+                    .togetherWith(scaleOut(targetScale = 0.8f, animationSpec = tween(duration)) + fadeOut(tween(duration)))
+                    .using(SizeTransform(clip = false) { _, _ -> spring(Spring.DampingRatioLowBouncy, Spring.StiffnessLow) })
+            } else {
+                // Initial Entry: Scale up the whole amount unit from its center
+                (scaleIn(initialScale = 0.8f, animationSpec = tween(duration)) + fadeIn(tween(duration)))
+                    .togetherWith(scaleOut(targetScale = 1.1f, animationSpec = tween(duration)) + fadeOut(tween(duration)))
+                    .using(SizeTransform(clip = false) { _, _ -> spring(Spring.DampingRatioLowBouncy, Spring.StiffnessLow) })
+            }
+        },
+        label = "AmountUnitTransition",
+        modifier = Modifier.fillMaxWidth().height(80.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) { isPlaceholder ->
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "₹",
+                style = TitleLg.copy(
+                    fontSize = 32.sp, 
+                    color = if (isPlaceholder) ColorTextMuted.copy(alpha = 0.4f) else ColorTextMuted,
+                    fontWeight = FontWeight.Medium
+                ),
+                modifier = Modifier.padding(bottom = 6.dp)
             )
+            Spacer(Modifier.width(12.dp))
+            
+            if (isPlaceholder) {
+                Text(
+                    text = "0.00",
+                    style = TitleLg.copy(
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorTextMuted.copy(alpha = 0.4f),
+                        fontFeatureSettings = "tnum"
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            } else {
+                val tokens = getAmountTokens(amount)
+                LazyRow(
+                    modifier = Modifier.wrapContentWidth().clipToBounds(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.Center,
+                    userScrollEnabled = false
+                ) {
+                    items(tokens, key = { it.key }) { token ->
+                        DigitSlot(
+                            char = token.char,
+                            isAdding = isAdding,
+                            isPlaceholder = false,
+                            animateInitialValue = hasInitialized.value,
+                            key = token.key,
+                            modifier = Modifier.animateItem(
+                                placementSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                fadeOutSpec = tween(150),
+                                fadeInSpec = tween(150)
+                            )
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        hasInitialized.value = true
     }
 }
 
 private data class AmountToken(val char: Char, val key: String)
 
 /**
- * Generates stable tokens for each character in the formatted amount.
- * Digits get keys based on their raw position, commas based on the digit they follow.
+ * Generates stable tokens for each character in the raw amount.
+ * The animated dialpad only uses raw digits. Formatting is applied securely after confirmation.
  */
 private fun getAmountTokens(amount: String): List<AmountToken> {
-    val displayAmount = if (amount.isEmpty()) "0.00" else formatIndianAmount(amount)
     val tokens = mutableListOf<AmountToken>()
     var digitIndex = 0
 
-    displayAmount.forEach { char ->
+    amount.forEach { char ->
         val key = when (char) {
-            ',' -> "comma_$digitIndex"
             '.' -> "dot"
             else -> {
                 val k = "digit_$digitIndex"
@@ -809,15 +857,15 @@ private fun DigitSlot(
     char: Char?,
     isAdding: Boolean,
     isPlaceholder: Boolean,
-    isInitialDigit: Boolean,
+    animateInitialValue: Boolean,
     key: String,
     modifier: Modifier = Modifier
 ) {
-    val duration = if (char == ',') 160 else 220
+    val duration = 220
     
-    // Use a local state to trigger the "null -> char" animation when the slot is first born.
-    // This ensures that new digits/commas always roll in, even in a dynamic LazyRow.
-    var animatedChar by remember { mutableStateOf<Char?>(null) }
+    // If animateInitialValue is false, we start with the char immediately to skip entrance animation.
+    // If true, we start at null to trigger the "roll-in" animation.
+    var animatedChar by remember { mutableStateOf(if (animateInitialValue) null else char) }
     LaunchedEffect(char) {
         animatedChar = char
     }
@@ -828,42 +876,37 @@ private fun DigitSlot(
         modifier = modifier,
         transitionSpec = {
             if (isAdding) {
-                // Scale Up + Jump Up + Fade In (Bottom-Center anchor)
-                (scaleIn(
+                // Precise Scale Up + Micro-Bounce (Bottom-Center anchor)
+                // No fade or slide for an immediate, tactile feel.
+                scaleIn(
                     animationSpec = keyframes {
-                        durationMillis = duration
-                        0.82f at 0 with FastOutSlowInEasing
-                        1.06f at (duration * 0.6).toInt() with FastOutSlowInEasing
-                        1.0f at duration
+                        durationMillis = 140
+                        0.85f at 0 with FastOutSlowInEasing
+                        1.05f at 90 with FastOutSlowInEasing
+                        1.0f at 140
                     },
                     transformOrigin = TransformOrigin(0.5f, 1f)
-                ) + slideInVertically(
-                    animationSpec = keyframes {
-                        durationMillis = duration
-                        IntOffset(0, 32) at 0 with FastOutSlowInEasing
-                        IntOffset(0, -6) at (duration * 0.6).toInt() with FastOutSlowInEasing
-                        IntOffset(0, 0) at duration
-                    }
-                ) { 0 } + fadeIn(tween(duration, easing = FastOutSlowInEasing))).togetherWith(
+                ).togetherWith(
                     scaleOut(
-                        animationSpec = tween(duration, easing = FastOutSlowInEasing),
-                        targetScale = 0.5f,
+                        animationSpec = tween(80),
+                        targetScale = 0.95f,
                         transformOrigin = TransformOrigin(0.5f, 1f)
-                    ) + fadeOut(tween(duration, easing = FastOutSlowInEasing))
+                    )
                 ).using(SizeTransform(clip = false))
             } else {
-                // Scale Down + Fade Out (Center anchor)
-                (scaleIn(
-                    animationSpec = tween(duration, easing = FastOutSlowInEasing),
-                    initialScale = 1.2f,
-                    transformOrigin = TransformOrigin(0.5f, 1f)
-                ) + fadeIn(tween(duration, easing = FastOutSlowInEasing))).togetherWith(
+                // Pure center scale-down. snap() on SizeTransform collapses the slot
+                // width instantly so the digit cannot drift left/right.
+                scaleIn(
+                    animationSpec = tween(duration, easing = LinearOutSlowInEasing),
+                    initialScale = 1.1f,
+                    transformOrigin = TransformOrigin(0.5f, 0.5f)
+                ).togetherWith(
                     scaleOut(
-                        animationSpec = tween(duration, easing = FastOutSlowInEasing),
-                        targetScale = 0.5f,
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                    ) + fadeOut(tween(duration, easing = FastOutSlowInEasing))
-                ).using(SizeTransform(clip = false))
+                        animationSpec = tween(120, easing = LinearOutSlowInEasing),
+                        targetScale = 0.85f,
+                        transformOrigin = TransformOrigin(0.5f, 0.5f)
+                    )
+                ).using(SizeTransform(clip = false) { _, _ -> snap() })
             }
         },
         label = "DigitRoll_$key"
@@ -877,7 +920,7 @@ private fun DigitSlot(
                     color = if (isPlaceholder) ColorTextMuted.copy(alpha = 0.4f) else ColorText,
                     fontFeatureSettings = "tnum"
                 ),
-                modifier = Modifier.widthIn(min = if (targetChar == ',') 12.dp else 22.dp)
+                modifier = Modifier.widthIn(min = 22.dp)
             )
         } else {
             Box(Modifier.height(48.dp).width(0.dp))
