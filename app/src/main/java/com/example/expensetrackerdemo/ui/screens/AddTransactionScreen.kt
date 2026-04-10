@@ -2,8 +2,19 @@ package com.example.expensetrackerdemo.ui.screens
 
 import android.app.DatePickerDialog
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -211,7 +222,7 @@ fun AddTransactionScreen(
                     ) {
                         Text("₹", style = TitleLg.copy(fontSize = 24.sp, color = ColorTextMuted.copy(alpha = 0.6f)))
                         Text(
-                            text = if (amount.isEmpty()) "0.00" else amount,
+                            text = if (amount.isEmpty()) "0.00" else formatIndianAmount(amount),
                             style = TitleLg.copy(
                                 fontSize = 32.sp, 
                                 fontWeight = FontWeight.Bold, 
@@ -354,7 +365,7 @@ private fun TransactionTypeToggle(
         )
         val indicatorColor by animateColorAsState(
             targetValue = if (isIncome) ColorSuccess.copy(alpha = 0.15f) else ColorError.copy(alpha = 0.15f),
-            animationSpec = tween(durationMillis = 220)
+            animationSpec = tween<Color>(durationMillis = 220)
         )
 
         // 1. Sliding Indicator Pill
@@ -372,11 +383,11 @@ private fun TransactionTypeToggle(
         Row(modifier = Modifier.fillMaxSize()) {
             val incomeTextColor by animateColorAsState(
                 targetValue = if (isIncome) ColorSuccess else ColorTextMuted,
-                animationSpec = tween(durationMillis = 180)
+                animationSpec = tween<Color>(durationMillis = 180)
             )
             val expenseTextColor by animateColorAsState(
                 targetValue = if (!isIncome) ColorError else ColorTextMuted,
-                animationSpec = tween(durationMillis = 180)
+                animationSpec = tween<Color>(durationMillis = 180)
             )
 
             Box(
@@ -711,28 +722,85 @@ private fun RollingAmountDisplay(
     isAdding: Boolean,
     isPlaceholder: Boolean
 ) {
-    val displayAmount = if (amount.isEmpty()) "0.00" else amount
+    val tokens = getAmountTokens(amount)
     
-    Row(
+    LazyRow(
         modifier = Modifier.clipToBounds(),
         verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
+        userScrollEnabled = false
     ) {
-        // By always keeping 12 slots present and initialized to null, we ensure 
-        // that new digits transition from 'null' to 'char', causing them to 
-        // ROLL UP with the exact same animation as the very first digit.
-        val totalSlots = 12
-        for (i in 0 until totalSlots) {
-            val char = displayAmount.getOrNull(i)
+        items(tokens, key = { it.key }) { token ->
             DigitSlot(
-                char = char,
+                char = token.char,
                 isAdding = isAdding,
                 isPlaceholder = isPlaceholder,
                 isInitialDigit = amount.length <= 1,
-                key = i
+                key = token.key,
+                modifier = Modifier.animateItem(
+                    placementSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    fadeInSpec = null, // Handled by DigitSlot's AnimatedContent
+                    fadeOutSpec = null
+                )
             )
         }
     }
+}
+
+private data class AmountToken(val char: Char, val key: String)
+
+/**
+ * Generates stable tokens for each character in the formatted amount.
+ * Digits get keys based on their raw position, commas based on the digit they follow.
+ */
+private fun getAmountTokens(amount: String): List<AmountToken> {
+    val displayAmount = if (amount.isEmpty()) "0.00" else formatIndianAmount(amount)
+    val tokens = mutableListOf<AmountToken>()
+    var digitIndex = 0
+
+    displayAmount.forEach { char ->
+        val key = when (char) {
+            ',' -> "comma_$digitIndex"
+            '.' -> "dot"
+            else -> {
+                val k = "digit_$digitIndex"
+                digitIndex++
+                k
+            }
+        }
+        tokens.add(AmountToken(char, key))
+    }
+    return tokens
+}
+
+/**
+ * Formats a raw numeric string into the Indian Number System (3,2,2 grouping).
+ * Example: 1234567.89 -> 12,34,567.89
+ */
+private fun formatIndianAmount(amount: String): String {
+    if (amount.isEmpty()) return ""
+
+    val parts = amount.split(".")
+    val integerPart = parts[0]
+    val decimalPart = if (parts.size > 1) "." + parts[1] else ""
+
+    val formattedInteger = if (integerPart.length <= 3) {
+        integerPart
+    } else {
+        val lastThree = integerPart.takeLast(3)
+        val rest = integerPart.dropLast(3)
+        // Group the remaining digits in pairs (Indian system)
+        val restFormatted = rest.reversed()
+            .chunked(2)
+            .joinToString(",")
+            .reversed()
+        "$restFormatted,$lastThree"
+    }
+
+    return formattedInteger + decimalPart
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -742,13 +810,22 @@ private fun DigitSlot(
     isAdding: Boolean,
     isPlaceholder: Boolean,
     isInitialDigit: Boolean,
-    key: Int
+    key: String,
+    modifier: Modifier = Modifier
 ) {
-    val duration = 220
+    val duration = if (char == ',') 160 else 220
+    
+    // Use a local state to trigger the "null -> char" animation when the slot is first born.
+    // This ensures that new digits/commas always roll in, even in a dynamic LazyRow.
+    var animatedChar by remember { mutableStateOf<Char?>(null) }
+    LaunchedEffect(char) {
+        animatedChar = char
+    }
 
     AnimatedContent(
-        targetState = char,
+        targetState = animatedChar,
         contentKey = { "${it}_$key" },
+        modifier = modifier,
         transitionSpec = {
             if (isAdding) {
                 // Scale Up + Jump Up + Fade In (Bottom-Center anchor)
@@ -756,7 +833,7 @@ private fun DigitSlot(
                     animationSpec = keyframes {
                         durationMillis = duration
                         0.82f at 0 with FastOutSlowInEasing
-                        1.06f at 140 with FastOutSlowInEasing
+                        1.06f at (duration * 0.6).toInt() with FastOutSlowInEasing
                         1.0f at duration
                     },
                     transformOrigin = TransformOrigin(0.5f, 1f)
@@ -764,7 +841,7 @@ private fun DigitSlot(
                     animationSpec = keyframes {
                         durationMillis = duration
                         IntOffset(0, 32) at 0 with FastOutSlowInEasing
-                        IntOffset(0, -6) at 140 with FastOutSlowInEasing
+                        IntOffset(0, -6) at (duration * 0.6).toInt() with FastOutSlowInEasing
                         IntOffset(0, 0) at duration
                     }
                 ) { 0 } + fadeIn(tween(duration, easing = FastOutSlowInEasing))).togetherWith(
@@ -800,11 +877,9 @@ private fun DigitSlot(
                     color = if (isPlaceholder) ColorTextMuted.copy(alpha = 0.4f) else ColorText,
                     fontFeatureSettings = "tnum"
                 ),
-                modifier = Modifier.widthIn(min = 22.dp)
+                modifier = Modifier.widthIn(min = if (targetChar == ',') 12.dp else 22.dp)
             )
         } else {
-            // Placeholder for inactive slots to keep them in the tree for entry/exit animations.
-            // Using a Height prevents the row from collapsing.
             Box(Modifier.height(48.dp).width(0.dp))
         }
     }
