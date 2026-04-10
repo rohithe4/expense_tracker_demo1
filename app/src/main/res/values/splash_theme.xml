@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- The background color of the splash screen. -->
+        <item name="windowSplashScreenBackground">@color/colorBg</item>
+        <!-- Use an icon to display in the middle of the screen. -->
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <!-- The theme to use after the splash screen finishes. -->
+        <item name="postSplashScreenTheme">@style/Theme.ExpenseTrackerDemo</item>
+    </style>
+</resources>
