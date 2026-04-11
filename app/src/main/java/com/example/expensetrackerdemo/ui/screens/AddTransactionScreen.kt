@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -15,8 +16,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.togetherWith
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -614,7 +617,6 @@ private fun AmountEntrySheet(
     sheetState: SheetState
 ) {
     var amount by remember { mutableStateOf(initialAmount) }
-    var isAdding by remember { mutableStateOf(true) }
     val haptic = LocalHapticFeedback.current
 
     ModalBottomSheet(
@@ -639,8 +641,7 @@ private fun AmountEntrySheet(
 
             // Large Amount Display (Integrated Rolling Counter)
             RollingAmountDisplay(
-                amount = amount,
-                isAdding = isAdding
+                amount = amount
             )
 
             // Custom Keypad
@@ -668,16 +669,13 @@ private fun AmountEntrySheet(
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     when (key) {
                                         "DEL" -> if (amount.isNotEmpty()) {
-                                            isAdding = false
                                             amount = amount.dropLast(1)
                                         }
                                         "." -> {
-                                            isAdding = true
                                             if (amount.isEmpty()) amount = "0."
                                             else if (!amount.contains(".")) amount += "."
                                         }
                                         else -> {
-                                            isAdding = true
                                             if (amount == "0") {
                                                 amount = key
                                             } else {
@@ -712,24 +710,55 @@ private fun AmountEntrySheet(
 
 @Composable
 private fun RollingAmountDisplay(
-    amount: String,
-    isAdding: Boolean
+    amount: String
 ) {
-    val hasInitialized = remember { mutableStateOf(false) }
-    
-    // We wrap the entire block (Currency + Amount) in AnimatedContent to ensure
-    // it transitions as a single centered unit, preventing horizontal jitter or "splitting".
+    val tokens = remember(amount) { getAmountTokens(amount) }
+    val visibleTokens = remember { mutableStateListOf<AmountToken>().apply { addAll(tokens) } }
+    val tokenVisibility = remember { 
+        mutableStateMapOf<String, Boolean>().apply { 
+            tokens.forEach { put(it.key, true) } 
+        } 
+    }
+
+    LaunchedEffect(tokens) {
+        // Handle entry: add new tokens as invisible, then flip to visible next frame
+        val newTokens = tokens.filter { token -> visibleTokens.none { it.key == token.key } }
+        newTokens.forEach { token ->
+            visibleTokens.add(token)
+            tokenVisibility[token.key] = false
+        }
+        if (newTokens.isNotEmpty()) {
+            // One frame delay so AnimatedVisibility sees false → true
+            withFrameMillis {}
+            newTokens.forEach { token ->
+                tokenVisibility[token.key] = true
+            }
+        }
+
+        // Handle delete: flip to invisible, wait for exit animation, then remove
+        val toRemove = visibleTokens.filter { visible -> tokens.none { it.key == visible.key } }
+        toRemove.forEach { token ->
+            tokenVisibility[token.key] = false
+        }
+        if (toRemove.isNotEmpty()) {
+            delay(260) // slightly longer than exit animation (250ms)
+            visibleTokens.removeAll(toRemove.toSet())
+            toRemove.forEach { token ->
+                tokenVisibility.remove(token.key)
+            }
+        }
+    }
+
+    // Wrap the entire block in AnimatedContent for the placeholder-to-amount transition
     AnimatedContent(
         targetState = amount.isEmpty(),
         transitionSpec = {
             val duration = 240
             if (targetState) {
-                // Return to placeholder: Scale down the whole amount unit toward its center
                 (scaleIn(initialScale = 1.1f, animationSpec = tween(duration)) + fadeIn(tween(duration)))
                     .togetherWith(scaleOut(targetScale = 0.8f, animationSpec = tween(duration)) + fadeOut(tween(duration)))
                     .using(SizeTransform(clip = false) { _, _ -> spring(Spring.DampingRatioLowBouncy, Spring.StiffnessLow) })
             } else {
-                // Initial Entry: Scale up the whole amount unit from its center
                 (scaleIn(initialScale = 0.8f, animationSpec = tween(duration)) + fadeIn(tween(duration)))
                     .togetherWith(scaleOut(targetScale = 1.1f, animationSpec = tween(duration)) + fadeOut(tween(duration)))
                     .using(SizeTransform(clip = false) { _, _ -> spring(Spring.DampingRatioLowBouncy, Spring.StiffnessLow) })
@@ -766,37 +795,54 @@ private fun RollingAmountDisplay(
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
             } else {
-                val tokens = getAmountTokens(amount)
-                LazyRow(
+                Row(
                     modifier = Modifier.wrapContentWidth().clipToBounds(),
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.Center,
-                    userScrollEnabled = false
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    items(tokens, key = { it.key }) { token ->
-                        DigitSlot(
-                            char = token.char,
-                            isAdding = isAdding,
-                            isPlaceholder = false,
-                            animateInitialValue = hasInitialized.value,
-                            key = token.key,
-                            modifier = Modifier.animateItem(
-                                placementSpec = spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
+                    visibleTokens.forEach { token ->
+                        key(token.key) {
+                            AnimatedVisibility(
+                                visible = tokenVisibility[token.key] == true,
+                                enter = scaleIn(
+                                    initialScale = 0.4f,
+                                    animationSpec = tween(
+                                        durationMillis = 350,
+                                        easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f)
+                                    ),
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                ) + expandHorizontally(
+                                    animationSpec = tween(350, easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f))
+                                ) + fadeIn(
+                                    animationSpec = tween(100)
                                 ),
-                                fadeOutSpec = tween(150),
-                                fadeInSpec = tween(150)
-                            )
-                        )
+                                exit = scaleOut(
+                                    animationSpec = tween(250, easing = EaseInOut),
+                                    targetScale = 0.0f,
+                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                ) + shrinkHorizontally(
+                                    animationSpec = tween(250, easing = EaseInOut),
+                                    shrinkTowards = Alignment.CenterHorizontally
+                                ) + fadeOut(
+                                    animationSpec = tween(250)
+                                )
+                            ) {
+                                Text(
+                                    text = token.char.toString(),
+                                    style = TitleLg.copy(
+                                        fontSize = 48.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = ColorText,
+                                        fontFeatureSettings = "tnum"
+                                    ),
+                                    modifier = Modifier.widthIn(min = 22.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
-    }
-
-    LaunchedEffect(Unit) {
-        hasInitialized.value = true
     }
 }
 
@@ -851,82 +897,7 @@ private fun formatIndianAmount(amount: String): String {
     return formattedInteger + decimalPart
 }
 
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-private fun DigitSlot(
-    char: Char?,
-    isAdding: Boolean,
-    isPlaceholder: Boolean,
-    animateInitialValue: Boolean,
-    key: String,
-    modifier: Modifier = Modifier
-) {
-    val duration = 220
-    
-    // If animateInitialValue is false, we start with the char immediately to skip entrance animation.
-    // If true, we start at null to trigger the "roll-in" animation.
-    var animatedChar by remember { mutableStateOf(if (animateInitialValue) null else char) }
-    LaunchedEffect(char) {
-        animatedChar = char
-    }
 
-    AnimatedContent(
-        targetState = animatedChar,
-        contentKey = { "${it}_$key" },
-        modifier = modifier,
-        transitionSpec = {
-            if (isAdding) {
-                // Precise Scale Up + Micro-Bounce (Bottom-Center anchor)
-                // No fade or slide for an immediate, tactile feel.
-                scaleIn(
-                    animationSpec = keyframes {
-                        durationMillis = 140
-                        0.85f at 0 with FastOutSlowInEasing
-                        1.05f at 90 with FastOutSlowInEasing
-                        1.0f at 140
-                    },
-                    transformOrigin = TransformOrigin(0.5f, 1f)
-                ).togetherWith(
-                    scaleOut(
-                        animationSpec = tween(80),
-                        targetScale = 0.95f,
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                    )
-                ).using(SizeTransform(clip = false))
-            } else {
-                // Pure center scale-down. snap() on SizeTransform collapses the slot
-                // width instantly so the digit cannot drift left/right.
-                scaleIn(
-                    animationSpec = tween(duration, easing = LinearOutSlowInEasing),
-                    initialScale = 1.1f,
-                    transformOrigin = TransformOrigin(0.5f, 0.5f)
-                ).togetherWith(
-                    scaleOut(
-                        animationSpec = tween(120, easing = LinearOutSlowInEasing),
-                        targetScale = 0.85f,
-                        transformOrigin = TransformOrigin(0.5f, 0.5f)
-                    )
-                ).using(SizeTransform(clip = false) { _, _ -> snap() })
-            }
-        },
-        label = "DigitRoll_$key"
-    ) { targetChar ->
-        if (targetChar != null) {
-            Text(
-                text = targetChar.toString(),
-                style = TitleLg.copy(
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPlaceholder) ColorTextMuted.copy(alpha = 0.4f) else ColorText,
-                    fontFeatureSettings = "tnum"
-                ),
-                modifier = Modifier.widthIn(min = 22.dp)
-            )
-        } else {
-            Box(Modifier.height(48.dp).width(0.dp))
-        }
-    }
-}
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)

@@ -262,8 +262,8 @@ This prevents bugs such as:
 Animate only changed digits.
 
 Recommended behavior:
-- Digit entry: scale up from bottom-center with light fade.
-- Digit delete: scale down with fade.
+- Digit entry: scale up from bottom-center. No fade. Bottom-center anchor (TransformOrigin 0.5f, 1f).
+- Digit delete: scale down to bottom-center. No fade. No slide. Pure scale only.
 - Keep digit slot width stable.
 - Use tabular numbers if typography allows.
 
