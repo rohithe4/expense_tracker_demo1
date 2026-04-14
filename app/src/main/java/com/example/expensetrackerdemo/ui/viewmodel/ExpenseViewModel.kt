@@ -14,6 +14,12 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+enum class TransactionSuccessType {
+    NONE, CREATED, UPDATED
+}
 
 data class TransactionUiModel(
     val id: Int,
@@ -35,6 +41,21 @@ data class DashboardUiState(
 )
 
 class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() {
+
+    private val _transactionSuccess = MutableStateFlow(TransactionSuccessType.NONE)
+    val transactionSuccess = _transactionSuccess.asStateFlow()
+
+    fun notifyTransactionCreated() {
+        _transactionSuccess.value = TransactionSuccessType.CREATED
+    }
+
+    fun notifyTransactionUpdated() {
+        _transactionSuccess.value = TransactionSuccessType.UPDATED
+    }
+
+    fun clearTransactionSuccess() {
+        _transactionSuccess.value = TransactionSuccessType.NONE
+    }
 
     // Eagerly: DB queries fire when ViewModel is created, not when UI subscribes.
     // This is the single biggest performance improvement — data is already in-flight

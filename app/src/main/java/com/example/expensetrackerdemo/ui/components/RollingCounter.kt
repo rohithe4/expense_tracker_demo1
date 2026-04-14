@@ -70,8 +70,8 @@ fun RollingCounter(
     
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Start
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
         // Prefix (e.g., ₹)
         Text(
@@ -195,7 +195,8 @@ private fun DigitReel(
         modifier = modifier
             .height(with(androidx.compose.ui.platform.LocalDensity.current) { style.fontSize.toDp() * 1.3f })
             .offset(y = inertialOffset.value.dp)
-            .clipToBounds()
+            .clipToBounds(),
+        contentAlignment = Alignment.Center
     ) {
         DigitLayout(
             scrollOffset = scrollOffset.value,

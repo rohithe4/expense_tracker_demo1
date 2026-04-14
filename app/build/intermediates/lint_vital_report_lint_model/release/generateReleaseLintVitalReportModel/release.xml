@@ -5,7 +5,7 @@
     targetSdkVersion="36.0"
     mergedManifest="build\intermediates\merged_manifest\release\processReleaseMainManifest\AndroidManifest.xml"
     manifestMergeReport="build\outputs\logs\manifest-merger-release-report.txt"
-    proguardFiles="build\intermediates\default_proguard_files\global\proguard-android-optimize.txt-9.1.0;proguard-rules.pro"
+    proguardFiles="build\intermediates\default_proguard_files\global\proguard-android-optimize.txt-9.1.1;proguard-rules.pro"
     partialResultsDir="build\intermediates\lint_vital_partial_results\release\lintVitalAnalyzeRelease\out">
   <buildFeatures/>
   <sourceProviders>
@@ -25,6 +25,6 @@
       type="MAIN"
       applicationId="com.example.expensetrackerdemo"
       generatedSourceFolders="build\generated\ksp\release\kotlin;build\generated\ap_generated_sources\release\out"
-      desugaredMethodsFiles="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9e4cc2ca43e8f65f227569c54cf6e7db\workspace\transformed\D8BackportedDesugaredMethods.txt">
+      desugaredMethodsFiles="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\88d390f269ad82e2d6b109eee59039f1\workspace\transformed\D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>

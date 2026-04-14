@@ -113,7 +113,7 @@ int drawable notification_template_icon_bg 0x7f040015
 int drawable notification_template_icon_low_bg 0x7f040016
 int drawable notification_tile_bg 0x7f040017
 int drawable notify_panel_notification_icon_bg 0x7f040018
-int font figtree 0x7f050000
+int font mona_sans 0x7f050000
 int id accessibility_action_clickable_span 0x7f060000
 int id accessibility_custom_action_0 0x7f060001
 int id accessibility_custom_action_1 0x7f060002

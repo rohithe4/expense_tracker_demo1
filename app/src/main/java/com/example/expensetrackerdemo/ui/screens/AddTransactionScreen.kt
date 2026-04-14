@@ -73,7 +73,7 @@ fun AddTransactionScreen(
     val isEditMode = transactionId != -1
     val templates by viewModel.allTemplates.collectAsState()
     val context = LocalContext.current
-    
+
     // Form State
     var isIncome by remember { mutableStateOf(false) }
     var amount by remember { mutableStateOf("") }
@@ -102,19 +102,19 @@ fun AddTransactionScreen(
             }
         }
     }
-    
-    // Categories and Accounts moved to constants or defined inside build if needed, 
+
+    // Categories and Accounts moved to constants or defined inside build if needed,
     // but better to keep them consistent.
     val categories = remember {
         listOf(
             "Food & Dining", "Transport", "Shopping", "Groceries", "Bills & Utilities",
-            "Entertainment", "Health", "Education", "Salary", "Freelance", 
+            "Entertainment", "Health", "Education", "Salary", "Freelance",
             "Business", "Investment", "Travel", "Rent", "Gifts", "Personal Care", "Technology", "Other"
         )
     }
     val accounts = remember {
         listOf(
-            "Cash", "Bank Account", "Credit Card", "Debit Card", "UPI", 
+            "Cash", "Bank Account", "Credit Card", "Debit Card", "UPI",
             "Wallet", "Salary Account", "Savings Account", "Other"
         )
     }
@@ -128,6 +128,27 @@ fun AddTransactionScreen(
     // Validation
     val isFormValid = remember(amount, name, category, source) {
         amount.isNotBlank() && name.isNotBlank() && category.isNotBlank() && source.isNotBlank()
+    }
+
+    val hasChanges = remember(
+        isIncome, amount, name, category, source, note, reference, selectedDate, originalTransaction, isEditMode
+    ) {
+        if (!isEditMode) true
+        else {
+            originalTransaction?.let { txn ->
+                val currentAmount = amount.toDoubleOrNull() ?: 0.0
+                val currentType = if (isIncome) 1 else -1
+
+                currentType != txn.type ||
+                currentAmount != txn.amount ||
+                name != txn.name ||
+                category != txn.category ||
+                source != txn.source ||
+                note != (txn.note ?: "") ||
+                reference != (txn.reference ?: "") ||
+                selectedDate != txn.date
+            } ?: false
+        }
     }
 
     Scaffold(
@@ -166,6 +187,7 @@ fun AddTransactionScreen(
                                             reference = reference
                                         )
                                     )
+                                    viewModel.notifyTransactionUpdated()
                                 } else {
                                     viewModel.addTransaction(
                                         Transaction(
@@ -180,13 +202,14 @@ fun AddTransactionScreen(
                                             reference = reference
                                         )
                                     )
+                                    viewModel.notifyTransactionCreated()
                                 }
                                 onNavigateBack()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         style = AppButtonStyle.Primary,
-                        enabled = isFormValid
+                        enabled = isFormValid && hasChanges
                     )
                 }
             }
@@ -200,7 +223,7 @@ fun AddTransactionScreen(
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            
+
             // 1. Transaction Type (Sliding Segmented Control)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("TRANSACTION TYPE", style = MetaSm.copy(color = ColorText, letterSpacing = 0.12.sp))
@@ -229,8 +252,8 @@ fun AddTransactionScreen(
                         Text(
                             text = if (amount.isEmpty()) "0.00" else formatIndianAmount(amount),
                             style = TitleLg.copy(
-                                fontSize = 32.sp, 
-                                fontWeight = FontWeight.Bold, 
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = if (amount.isEmpty()) ColorTextMuted.copy(alpha = 0.4f) else ColorText
                             )
                         )
@@ -242,9 +265,9 @@ fun AddTransactionScreen(
                 AmountEntrySheet(
                     initialAmount = amount,
                     onDismiss = { showAmountSheet = false },
-                    onConfirm = { 
+                    onConfirm = {
                         amount = it
-                        showAmountSheet = false 
+                        showAmountSheet = false
                     },
                     sheetState = sheetState
                 )
@@ -267,7 +290,7 @@ fun AddTransactionScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedTemplate?.name ?: "Tap to select template", 
+                            text = selectedTemplate?.name ?: "Tap to select template",
                             style = BodyLg.copy(color = if (selectedTemplate != null) ColorText else ColorTextMuted)
                         )
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = ColorText)
@@ -303,23 +326,23 @@ fun AddTransactionScreen(
             // 4. Details Group (Merchant, Category, Source, Smart Date)
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 DetailInput(label = "Title / Merchant", value = name, onValueChange = { name = it }, placeholder = "Apple Store")
-                
+
                 DetailDropdown(
-                    label = "Category", 
-                    value = category, 
-                    placeholder = "Select category", 
-                    options = categories, 
+                    label = "Category",
+                    value = category,
+                    placeholder = "Select category",
+                    options = categories,
                     onOptionSelected = { category = it }
                 )
-                
+
                 DetailDropdown(
-                    label = "Account / Source", 
-                    value = source, 
-                    placeholder = "Select account", 
-                    options = accounts, 
+                    label = "Account / Source",
+                    value = source,
+                    placeholder = "Select account",
+                    options = accounts,
                     onOptionSelected = { source = it }
                 )
-                
+
                 // Smart Date Field
                 SmartDateField(
                     label = "Date",
@@ -333,8 +356,8 @@ fun AddTransactionScreen(
                 DetailInput(label = "Notes", value = note, onValueChange = { note = it }, placeholder = "Optional description", isMultiline = true)
                 DetailInput(label = "Reference ID", value = reference, onValueChange = { reference = it }, placeholder = "Reference / Receipt #")
             }
-            
-            // Padding for sticky bottom 
+
+            // Padding for sticky bottom
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
@@ -347,7 +370,7 @@ private fun TransactionTypeToggle(
 ) {
     val incomeInteractionSource = remember { MutableInteractionSource() }
     val expenseInteractionSource = remember { MutableInteractionSource() }
-    
+
     val isIncomeFocused by incomeInteractionSource.collectIsFocusedAsState()
     val isExpenseFocused by expenseInteractionSource.collectIsFocusedAsState()
 
@@ -446,13 +469,13 @@ private fun SmartDateField(
 ) {
     val context = LocalContext.current
     val calendar = remember { Calendar.getInstance() }
-    
+
     // Quick options logic
     val todayStart = remember { Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis }
     val yesterdayStart = remember { Calendar.getInstance().apply { add(Calendar.DATE, -1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis }
 
     val dateFormatterFormatted = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
-    
+
     val dateLabel = when {
         selectedDate >= todayStart && selectedDate < todayStart + 86400000 -> "Today"
         selectedDate >= yesterdayStart && selectedDate < yesterdayStart + 86400000 -> "Yesterday"
@@ -644,6 +667,14 @@ private fun AmountEntrySheet(
                 amount = amount
             )
 
+            AppButton(
+                text = "Confirm Amount",
+                onClick = { onConfirm(amount) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = amount.isNotEmpty() && amount.toDoubleOrNull() != null && amount.toDouble() > 0,
+                style = AppButtonStyle.Primary
+            )
+
             // Custom Keypad
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -695,14 +726,6 @@ private fun AmountEntrySheet(
                 }
             }
 
-            AppButton(
-                text = "Confirm Amount",
-                onClick = { onConfirm(amount) },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                enabled = amount.isNotEmpty() && amount.toDoubleOrNull() != null && amount.toDouble() > 0,
-                style = AppButtonStyle.Primary
-            )
-            
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -714,10 +737,10 @@ private fun RollingAmountDisplay(
 ) {
     val tokens = remember(amount) { getAmountTokens(amount) }
     val visibleTokens = remember { mutableStateListOf<AmountToken>().apply { addAll(tokens) } }
-    val tokenVisibility = remember { 
-        mutableStateMapOf<String, Boolean>().apply { 
-            tokens.forEach { put(it.key, true) } 
-        } 
+    val tokenVisibility = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            tokens.forEach { put(it.key, true) }
+        }
     }
 
     LaunchedEffect(tokens) {
@@ -775,14 +798,14 @@ private fun RollingAmountDisplay(
             Text(
                 text = "₹",
                 style = TitleLg.copy(
-                    fontSize = 32.sp, 
+                    fontSize = 32.sp,
                     color = if (isPlaceholder) ColorTextMuted.copy(alpha = 0.4f) else ColorTextMuted,
                     fontWeight = FontWeight.Medium
                 ),
                 modifier = Modifier.padding(bottom = 6.dp)
             )
             Spacer(Modifier.width(12.dp))
-            
+
             if (isPlaceholder) {
                 Text(
                     text = "0.00",
@@ -810,9 +833,10 @@ private fun RollingAmountDisplay(
                                         durationMillis = 350,
                                         easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f)
                                     ),
-                                    transformOrigin = TransformOrigin(0.5f, 1f)
+                                    transformOrigin = TransformOrigin.Center
                                 ) + expandHorizontally(
-                                    animationSpec = tween(350, easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f))
+                                    animationSpec = tween(350, easing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f)),
+                                    expandFrom = Alignment.CenterHorizontally
                                 ) + fadeIn(
                                     animationSpec = tween(100)
                                 ),

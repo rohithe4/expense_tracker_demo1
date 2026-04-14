@@ -4,7 +4,7 @@
             "outputFile": "com.example.expensetrackerdemo.app-mergeDebugResources-56:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\ROHITH\\.gradle\\caches\\9.3.1\\transforms\\ba05e30d661d3aefdc5d192acd267a14\\workspace\\transformed\\core-splashscreen-1.0.1\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\ROHITH\\.gradle\\caches\\9.3.1\\transforms\\73bb65bd51a821f2d031d23ebc6da942\\workspace\\transformed\\core-splashscreen-1.0.1\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
