@@ -35,6 +35,9 @@ val ColorSuccess = Color(0xFF3A7D44)
 val ColorWarning = Color(0xFFC97B1A)
 val ColorError = Color(0xFFB03060)
 
+val ColorIncome = ColorSuccess
+val ColorExpense = ColorError
+
 // Hero Ambient Tints
 val ColorHeroBlue = Color(0xFFD0E1F9)
 val ColorHeroPeach = Color(0xFFFDE7D1)

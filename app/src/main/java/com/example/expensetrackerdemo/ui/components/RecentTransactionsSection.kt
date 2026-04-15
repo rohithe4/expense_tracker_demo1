@@ -1,8 +1,18 @@
 package com.example.expensetrackerdemo.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -13,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -49,8 +62,18 @@ fun RecentTransactionsSection(
 ) {
     val scope = rememberCoroutineScope()
 
+    // Daily net calculation logic — compute once per transaction list change
+    val dailyNets = remember(transactions) {
+        transactions.groupBy { it.dateLabel }.mapValues { (_, items) ->
+            items.sumOf { it.originalTransaction.amount * it.originalTransaction.type }
+        }
+    }
     // Global open transaction ID — only one row open at a time
     var openTransactionId by remember { mutableStateOf<Int?>(null) }
+    
+    // Pagination state per group (visible items)
+    val visibleCounts = remember { mutableStateMapOf<String, Int>() }
+
     // UI only handles grouping for layout.
     val groups = remember(transactions) { transactions.groupBy { it.dateLabel } }
     val sortedLabels = remember(transactions) { transactions.map { it.dateLabel }.distinct() }
@@ -89,6 +112,15 @@ fun RecentTransactionsSection(
                         TransactionGroup(
                             label               = label,
                             items               = items,
+                            netTotal            = dailyNets[label] ?: 0.0,
+                            visibleCount        = visibleCounts[label] ?: 5,
+                            onViewMore          = { 
+                                val current = visibleCounts[label] ?: 5
+                                visibleCounts[label] = current + 5
+                            },
+                            onCollapse          = {
+                                visibleCounts[label] = 5
+                            },
                             openTransactionId   = openTransactionId,
                             onOpenTransaction   = { id -> openTransactionId = id },
                             onClearOpenTransaction = { openTransactionId = null },
@@ -123,41 +155,136 @@ fun RecentTransactionsSection(
 private fun TransactionGroup(
     label:                  String,
     items:                  List<TransactionUiModel>,
+    netTotal:               Double,
+    visibleCount:           Int,
+    onViewMore:             () -> Unit,
+    onCollapse:             () -> Unit,
     openTransactionId:      Int?,
     onOpenTransaction:      (Int) -> Unit,
     onClearOpenTransaction: () -> Unit,
     onEdit:                 (Int) -> Unit,
     onDelete:               (TransactionUiModel) -> Unit
 ) {
+    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale("en", "IN")) }
+    
+
+    // Add explicitly "+" for positive values, "-" for negative
+    val formattedNet = remember(netTotal) {
+        val sign = if (netTotal > 0) "+" else if (netTotal < 0) "-" else ""
+        sign + currencyFormatter.format(abs(netTotal))
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text     = label,
-            style    = ListGroupHeader,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text     = label,
+                style    = ListGroupHeader
+            )
+            Text(
+                text = formattedNet,
+                style = ListGroupHeader.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontFeatureSettings = TabularNumFeatureSettings
+                )
+            )
+        }
 
         Surface(
-            modifier        = Modifier.fillMaxWidth(),
+            modifier        = Modifier
+                .fillMaxWidth()
+                .animateContentSize(spring(stiffness = Spring.StiffnessMedium)),
             shape           = RoundedCornerShape(24.dp),
             color           = ColorSurface,
             shadowElevation = 0.5.dp
         ) {
             Column {
                 items.forEachIndexed { index, item ->
-                    TransactionRow(
-                        item    = item,
-                        isOpen  = openTransactionId == item.id,
-                        onOpen  = { onOpenTransaction(item.id) },
-                        onClose = { if (openTransactionId == item.id) onClearOpenTransaction() },
-                        onEdit  = { onEdit(item.id) },
-                        onDelete = { onDelete(item) }
-                    )
-                    if (index < items.size - 1) {
-                        HorizontalDivider(
-                            color     = ColorDivider.copy(alpha = 0.5f),
-                            thickness = 1.dp,
-                            modifier  = Modifier.padding(horizontal = 16.dp)
-                        )
+                    AnimatedVisibility(
+                        visible = index < visibleCount,
+                        enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(tween(180)),
+                        exit = slideOutVertically(targetOffsetY = { it }) + shrinkVertically(tween(180)) + fadeOut(tween(180))
+                    ) {
+                        Column {
+                            TransactionRow(
+                                item    = item,
+                                isOpen  = openTransactionId == item.id,
+                                onOpen  = { onOpenTransaction(item.id) },
+                                onClose = { if (openTransactionId == item.id) onClearOpenTransaction() },
+                                onEdit  = { onEdit(item.id) },
+                                onDelete = { onDelete(item) }
+                            )
+                            if (index < items.size - 1 && index < visibleCount - 1) {
+                                HorizontalDivider(
+                                    color     = ColorDivider.copy(alpha = 0.5f),
+                                    thickness = 1.dp,
+                                    modifier  = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                val hasMore = items.size > visibleCount
+                val canCollapse = visibleCount > 5
+
+                if (hasMore || canCollapse) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 44.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null, // Premium feel, no flash
+                                onClick = if (canCollapse) onCollapse else onViewMore
+                            )
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedContent(
+                            targetState = canCollapse,
+                            transitionSpec = {
+                                (slideInVertically { it } + fadeIn()).togetherWith(slideOutVertically { -it } + fadeOut())
+                            },
+                            label = "ExpandCollapseAnimation"
+                        ) { expanded ->
+                            if (expanded) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        "Collapse",
+                                        style = BodySm.copy(color = ColorTextMuted, fontWeight = FontWeight.Medium)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowUp,
+                                        contentDescription = null,
+                                        tint = ColorTextMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        "View more",
+                                        style = BodySm.copy(color = ColorTextMuted, fontWeight = FontWeight.Medium)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = ColorTextMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
