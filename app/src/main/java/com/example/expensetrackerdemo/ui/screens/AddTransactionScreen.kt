@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.expensetrackerdemo.data.model.Template
 import com.example.expensetrackerdemo.data.model.Transaction
@@ -225,8 +226,8 @@ fun AddTransactionScreen(
         ) {
 
             // 1. Transaction Type (Sliding Segmented Control)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("TRANSACTION TYPE", style = MetaSm.copy(color = ColorText, letterSpacing = 0.12.sp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("TRANSACTION TYPE", style = MetaSm.copy(color = ColorTextMuted, letterSpacing = 0.12.em))
                 TransactionTypeToggle(
                     isIncome = isIncome,
                     onSelectionChange = { isIncome = it }
@@ -234,27 +235,26 @@ fun AddTransactionScreen(
             }
 
             // 2. Amount Input (Trigger for Bottom Sheet)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("AMOUNT", style = MetaSm.copy(color = ColorText, letterSpacing = 0.12.sp))
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("AMOUNT", style = MetaSm.copy(color = ColorTextMuted, letterSpacing = 0.12.em))
                 Surface(
                     onClick = { showAmountSheet = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = ColorSurface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ColorTextMuted.copy(alpha = 0.2f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ColorDivider)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("₹", style = TitleLg.copy(fontSize = 24.sp, color = ColorTextMuted.copy(alpha = 0.6f)))
+                        Text("₹", style = DisplayMd.copy(color = ColorTextMuted))
                         Text(
                             text = if (amount.isEmpty()) "0.00" else formatIndianAmount(amount),
-                            style = TitleLg.copy(
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (amount.isEmpty()) ColorTextMuted.copy(alpha = 0.4f) else ColorText
+                            style = DisplayMd.copy(
+                                color = if (amount.isEmpty()) ColorTextMuted.copy(alpha = 0.3f) else ColorText,
+                                fontWeight = if (amount.isEmpty()) FontWeight.SemiBold else FontWeight.Bold
                             )
                         )
                     }
@@ -324,7 +324,7 @@ fun AddTransactionScreen(
             */
 
             // 4. Details Group (Merchant, Category, Source, Smart Date)
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 DetailInput(label = "Title / Merchant", value = name, onValueChange = { name = it }, placeholder = "Apple Store")
 
                 DetailDropdown(
@@ -352,7 +352,7 @@ fun AddTransactionScreen(
             }
 
             // 5. Notes & Reference
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 DetailInput(label = "Notes", value = note, onValueChange = { note = it }, placeholder = "Optional description", isMultiline = true)
                 DetailInput(label = "Reference ID", value = reference, onValueChange = { reference = it }, placeholder = "Reference / Receipt #")
             }

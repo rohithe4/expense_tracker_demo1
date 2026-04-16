@@ -34,6 +34,10 @@ class ExpenseRepository(private val dao: ExpenseDao) {
 
     suspend fun getTransactionById(id: Int): Transaction? = dao.getTransactionById(id)
 
+    fun getTransactionsByGroupId(groupId: String): Flow<List<Transaction>> = dao.getTransactionsByGroupId(groupId)
+
+    suspend fun deleteTransactionsByGroupId(groupId: String) = dao.deleteTransactionsByGroupId(groupId)
+
     fun getTotalIncome(): Flow<Double?> = dao.getTotalIncome()
 
     fun getTotalExpense(): Flow<Double?> = dao.getTotalExpense()

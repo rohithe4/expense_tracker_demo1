@@ -38,12 +38,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.ui.platform.LocalContext
 import com.example.expensetrackerdemo.util.PdfImportHelper
+import java.util.*
+
 @Composable
 fun DashboardScreen(
     viewModel: ExpenseViewModel,
     onNavigateToAddTransaction: () -> Unit,
     onNavigateToEditTransaction: (Int) -> Unit,
-    onNavigateToAddTemplate: () -> Unit
+    onNavigateToAddTemplate: () -> Unit,
+    onNavigateToHistory: () -> Unit
 ) {
     val uiState by viewModel.dashboardState.collectAsState()
     val transactionSuccess by viewModel.transactionSuccess.collectAsState()
@@ -68,6 +71,9 @@ fun DashboardScreen(
     var importedTransactions by remember { mutableStateOf<List<com.example.expensetrackerdemo.data.model.Transaction>>(emptyList()) }
     var isImporting by remember { mutableStateOf(false) }
 
+    var showGroupNamePrompt by remember { mutableStateOf(false) }
+    var tempImportedTransactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
@@ -85,8 +91,8 @@ fun DashboardScreen(
                     val parsed = PdfImportHelper.parsePdf(context, it)
                     isImporting = false
                     if (parsed.isNotEmpty()) {
-                        importedTransactions = parsed as List<com.example.expensetrackerdemo.data.model.Transaction>
-                        showImportPreview = true
+                        tempImportedTransactions = parsed as List<Transaction>
+                        showGroupNamePrompt = true
                     } else {
                         snackbarHostState.showSnackbar(
                             message = "Could not extract transactions from PDF"
@@ -146,61 +152,7 @@ fun DashboardScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-            ) { data ->
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        color = Color(0xFF1E1E1E),
-                        contentColor = Color.White,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .padding(bottom = 8.dp)
-                            .wrapContentSize()
-                            .widthIn(min = 200.dp, max = 340.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-                                .defaultMinSize(minHeight = 40.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = data.visuals.message,
-                                style = BodySm.copy(color = Color.White),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            
-                            data.visuals.actionLabel?.let { actionLabel ->
-                                TextButton(
-                                    onClick = { data.performAction() },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = ColorPrimaryLight),
-                                    contentPadding = PaddingValues(0.dp),
-                                    modifier = Modifier
-                                        .height(28.dp)
-                                        .wrapContentWidth()
-                                ) {
-                                    Text(
-                                        text = actionLabel.uppercase(),
-                                        style = ButtonSm.copy(fontWeight = FontWeight.Bold)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        snackbarHost = { AppSnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -277,7 +229,7 @@ fun DashboardScreen(
                         RecentTransactionsSection(
                             transactions = uiState.recentTransactions,
                             templates = emptyList(), 
-                            onViewAllClick = { /* Navigate to All Transactions */ },
+                            onViewAllClick = { viewModel.setSearchQuery(""); onNavigateToHistory() },
                             onEditTransaction = onNavigateToEditTransaction,
                             onDeleteTransaction = { transaction: Transaction -> viewModel.deleteTransaction(transaction) },
                             onUndoDelete = { transaction: Transaction -> viewModel.addTransaction(transaction) },
@@ -296,128 +248,74 @@ fun DashboardScreen(
                 onDismiss = { viewModel.clearTransactionSuccess() }
             )
 
-            if (isImporting) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable(enabled = false) {}, // absorb clicks
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = ColorSurface,
-                        modifier = Modifier.padding(32.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(color = ColorPrimaryLight, modifier = Modifier.size(24.dp))
-                            Text(text = "Parsing statement...", style = BodyLg)
-                        }
-                    }
-                }
-            }
-
-            if (showImportPreview) {
-                AlertDialog(
-                    onDismissRequest = { showImportPreview = false },
-                    title = { Text("Review Import", style = BodyLg.copy(fontWeight = FontWeight.Bold)) },
-                    text = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 400.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = "Found ${importedTransactions.size} transactions.",
-                                style = BodySm.copy(color = ColorTextMuted)
+            if (showGroupNamePrompt) {
+                var groupName by remember { mutableStateOf("New Statement") }
+                AppDialog(
+                    onDismissRequest = { showGroupNamePrompt = false },
+                    title = "Statement Name",
+                    content = {
+                        Column {
+                            Text("Give this group of transactions a name:", style = BodySm, color = ColorTextMuted)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = groupName,
+                                onValueChange = { groupName = it },
+                                label = { Text("Name") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = ColorPrimary,
+                                    cursorColor = ColorPrimary,
+                                    focusedLabelColor = ColorPrimary,
+                                    unfocusedBorderColor = ColorDivider,
+                                    unfocusedLabelColor = ColorTextMuted
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             )
-                            importedTransactions.forEach { txn ->
-                                val isIncome = txn.type == 1
-                                val color = if (isIncome) ColorSuccess else ColorText
-                                val amountPrefix = if (isIncome) "+" else "-"
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = txn.name, style = BodySm.copy(fontWeight = FontWeight.Bold))
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Box {
-                                            var expanded by remember { mutableStateOf(false) }
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.clickable { expanded = true }
-                                            ) {
-                                                Text(text = txn.category, style = MetaSm.copy(color = ColorPrimaryLight))
-                                                Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
-                                                    contentDescription = "Edit Category",
-                                                    tint = ColorPrimaryLight,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            }
-                                            DropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false },
-                                                modifier = Modifier.background(ColorSurface2)
-                                            ) {
-                                                val categories = listOf(
-                                                    "Food", "Travel/Transport", "Groceries", "Shopping", 
-                                                    "Bills & Utilities", "Entertainment/Subs", "Health", 
-                                                    "Home/Rent", "Loans/EMI", "Salary", "Personal", "Donations", "Other"
-                                                )
-                                                categories.forEach { cat ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(cat, style = BodySm, color = ColorText) },
-                                                        onClick = {
-                                                            val newList = importedTransactions.toMutableList()
-                                                            val index = newList.indexOf(txn)
-                                                            if (index != -1) {
-                                                                newList[index] = txn.copy(category = cat)
-                                                                importedTransactions = newList
-                                                            }
-                                                            expanded = false
-                                                        }
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Text(
-                                        text = "$amountPrefix${txn.amount}",
-                                        style = BodySm.copy(color = color, fontWeight = FontWeight.Bold)
-                                    )
-                                }
-                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ColorBorder))
-                            }
                         }
                     },
                     confirmButton = {
-                        TextButton(onClick = {
-                            importedTransactions.forEach { viewModel.addTransaction(it) }
-                            showImportPreview = false
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Imported ${importedTransactions.size} transactions")
-                            }
-                        }) {
-                            Text("Save All", style = ButtonSm, color = ColorPrimaryLight)
-                        }
+                        AppButton(
+                            text = "Next",
+                            onClick = {
+                                val groupId = UUID.randomUUID().toString()
+                                importedTransactions = tempImportedTransactions.map { 
+                                    it.copy(statementGroupId = groupId, statementGroupName = groupName) 
+                                }
+                                showGroupNamePrompt = false
+                                showImportPreview = true
+                            },
+                            style = AppButtonStyle.Primary
+                        )
                     },
                     dismissButton = {
-                        TextButton(onClick = { showImportPreview = false }) {
-                            Text("Cancel", style = ButtonSm, color = ColorTextMuted)
-                        }
+                        AppButton(
+                            text = "Cancel",
+                            onClick = { showGroupNamePrompt = false },
+                            style = AppButtonStyle.Tertiary
+                        )
+                    }
+                )
+            }
+
+            if (isImporting) {
+                AppLoadingDialog(message = "Parsing statement...")
+            }
+
+            if (showImportPreview) {
+                ImportPreviewDialog(
+                    importedTransactions = importedTransactions,
+                    onUpdateTransactions = { 
+                        importedTransactions = it 
                     },
-                    containerColor = ColorSurface,
-                    titleContentColor = ColorText,
-                    textContentColor = ColorText
+                    onDismiss = { showImportPreview = false },
+                    onSave = {
+                        importedTransactions.forEach { viewModel.addTransaction(it) }
+                        showImportPreview = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Imported ${importedTransactions.size} transactions")
+                        }
+                    }
                 )
             }
         }

@@ -13,6 +13,8 @@ import androidx.navigation.navArgument
 import com.example.expensetrackerdemo.ui.screens.AddTemplateScreen
 import com.example.expensetrackerdemo.ui.screens.AddTransactionScreen
 import com.example.expensetrackerdemo.ui.screens.DashboardScreen
+import com.example.expensetrackerdemo.ui.screens.GroupDetailScreen
+import com.example.expensetrackerdemo.ui.screens.HistoryScreen
 import com.example.expensetrackerdemo.ui.screens.SplashScreen
 import com.example.expensetrackerdemo.ui.viewmodel.ExpenseViewModel
 
@@ -71,6 +73,23 @@ fun ExpenseNavGraph(
                 },
                 onNavigateToAddTemplate = {
                     navController.navigate(Screen.AddTemplate.route)
+                },
+                onNavigateToHistory = {
+                    navController.navigate(Screen.History.route)
+                }
+            )
+        }
+        composable(Screen.History.route) {
+            HistoryScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToEditTransaction = { transactionId ->
+                    navController.navigate(Screen.EditTransaction.createRoute(transactionId))
+                },
+                onNavigateToGroupDetail = { groupId ->
+                    navController.navigate(Screen.GroupDetail.createRoute(groupId))
                 }
             )
         }
@@ -100,6 +119,22 @@ fun ExpenseNavGraph(
                 transactionId = transactionId,
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Screen.GroupDetail.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+            GroupDetailScreen(
+                viewModel = viewModel,
+                groupId = groupId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToEditTransaction = { transactionId ->
+                    navController.navigate(Screen.EditTransaction.createRoute(transactionId))
                 }
             )
         }

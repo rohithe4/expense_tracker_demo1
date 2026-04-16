@@ -15,6 +15,7 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class TransactionSuccessType {
@@ -31,6 +32,27 @@ data class TransactionUiModel(
     val isIncome: Boolean,
     val originalTransaction: com.example.expensetrackerdemo.data.model.Transaction
 )
+
+sealed class HistoryItem {
+    data class StatementGroup(
+        val groupId: String,
+        val name: String,
+        val count: Int,
+        val totalAmount: Double,
+        val dateRange: String,
+        val latestDate: Long
+    ) : HistoryItem()
+
+    data class Transaction(
+        val uiModel: TransactionUiModel
+    ) : HistoryItem()
+
+    data class DateGroup(
+        val dateLabel: String,
+        val items: List<TransactionUiModel>,
+        val netTotal: Double
+    ) : HistoryItem()
+}
 
 data class DashboardUiState(
     val netBalance: Double = 0.0,
@@ -57,15 +79,115 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
         _transactionSuccess.value = TransactionSuccessType.NONE
     }
 
-    // Eagerly: DB queries fire when ViewModel is created, not when UI subscribes.
-    // This is the single biggest performance improvement — data is already in-flight
-    // by the time the first Compose frame renders.
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
     // Consolidated Home Screen State
     val dashboardState: StateFlow<DashboardUiState> = combine(
         repository.getTotalIncome(),
         repository.getTotalExpense(),
-        repository.getRecentTransactions(15)
+        repository.getRecentTransactions(50)
     ) { income, expense, transactions ->
+        DashboardUiState(
+            income = income ?: 0.0,
+            expense = expense ?: 0.0,
+            netBalance = (income ?: 0.0) - (expense ?: 0.0),
+            recentTransactions = mapToUiModels(transactions),
+            isReady = true
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = DashboardUiState()
+    )
+
+    // Full history state with filtering and grouping
+    val historyItems: StateFlow<List<HistoryItem>> = combine(
+        repository.getAllTransactions(),
+        _searchQuery
+    ) { transactions, query ->
+        val result = mutableListOf<HistoryItem>()
+        
+        // Group by statementGroupId
+        val groupedByStatement = transactions.groupBy { it.statementGroupId }
+        val individualTransactions = mutableListOf<Transaction>()
+        
+        groupedByStatement.forEach { (groupId, txns) ->
+            if (groupId != null) {
+                // It's a statement group
+                val first = txns.first()
+                val groupName = first.statementGroupName ?: "Imported Statement"
+                
+                // If searching, only include group if it matches OR its transactions match
+                val matchesQuery = query.isEmpty() || 
+                    groupName.contains(query, ignoreCase = true) ||
+                    txns.any { it.name.contains(query, ignoreCase = true) || it.category.contains(query, ignoreCase = true) }
+                
+                if (matchesQuery) {
+                    val total = txns.sumOf { it.amount * it.type }
+                    val minDate = txns.minOf { it.date }
+                    val maxDate = txns.maxOf { it.date }
+                    val dateFormatter = SimpleDateFormat("dd MMM", Locale.getDefault())
+                    val dateRange = if (SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(minDate)) == SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(maxDate))) {
+                        dateFormatter.format(Date(minDate))
+                    } else {
+                        "${dateFormatter.format(Date(minDate))} - ${dateFormatter.format(Date(maxDate))}"
+                    }
+
+                    result.add(HistoryItem.StatementGroup(
+                        groupId = groupId,
+                        name = groupName,
+                        count = txns.size,
+                        totalAmount = total,
+                        dateRange = dateRange,
+                        latestDate = maxDate
+                    ))
+                }
+            } else {
+                // These are individual transactions (not part of any statement)
+                txns.forEach { txn ->
+                    val matchesQuery = query.isEmpty() || 
+                        txn.name.contains(query, ignoreCase = true) || 
+                        txn.category.contains(query, ignoreCase = true)
+                    
+                    if (matchesQuery) {
+                        individualTransactions.add(txn)
+                    }
+                }
+            }
+        }
+
+        // Group individual transactions by date
+        val individualByDate = individualTransactions.groupBy { mapSingleToUiModel(it).dateLabel }
+        
+        individualByDate.forEach { (label, txns) ->
+            val uiModels = txns.map { mapSingleToUiModel(it) }
+            val total = uiModels.sumOf { it.originalTransaction.amount * it.originalTransaction.type }
+            result.add(HistoryItem.DateGroup(
+                dateLabel = label,
+                items = uiModels.sortedByDescending { it.originalTransaction.date },
+                netTotal = total
+            ))
+        }
+
+        result.sortedByDescending { 
+            when (it) {
+                is HistoryItem.StatementGroup -> it.latestDate
+                is HistoryItem.DateGroup -> it.items.first().originalTransaction.date
+                is HistoryItem.Transaction -> it.uiModel.originalTransaction.date
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private fun mapSingleToUiModel(txn: Transaction): TransactionUiModel {
         val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
         val dateFormatter = SimpleDateFormat("dd MMM", Locale.getDefault())
         val timeFormatter = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -75,7 +197,60 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
         val today = groupKeyFormatter.format(Date(now))
         val yesterday = groupKeyFormatter.format(Date(now - 24 * 60 * 60 * 1000))
 
-        val mappedTransactions = transactions.map { txn ->
+        val date = Date(txn.date)
+        val gKey = groupKeyFormatter.format(date)
+        val dateLabel = when (gKey) {
+            today -> "TODAY"
+            yesterday -> "YESTERDAY"
+            else -> dateFormatter.format(date).uppercase()
+        }
+        
+        return TransactionUiModel(
+            id = txn.id,
+            name = txn.name,
+            category = txn.category,
+            amountFormatted = (if (txn.type == 1) "+" else "-") + currencyFormatter.format(txn.amount),
+            timeFormatted = timeFormatter.format(date),
+            dateLabel = dateLabel,
+            isIncome = txn.type == 1,
+            originalTransaction = txn
+        )
+    }
+
+    fun getTransactionsByGroupId(groupId: String) = repository.getTransactionsByGroupId(groupId)
+        .combine(_searchQuery) { transactions, query ->
+            val mapped = mapToUiModels(transactions)
+            if (query.isEmpty()) mapped
+            else mapped.filter { it.name.contains(query, ignoreCase = true) || it.category.contains(query, ignoreCase = true) }
+        }
+
+    fun deleteStatementGroup(groupId: String) {
+        viewModelScope.launch {
+            repository.deleteTransactionsByGroupId(groupId)
+        }
+    }
+
+    fun updateStatementGroupName(groupId: String, newName: String) {
+        viewModelScope.launch {
+            repository.getTransactionsByGroupId(groupId).firstOrNull()?.let { transactions ->
+                transactions.forEach { txn ->
+                    repository.updateTransaction(txn.copy(statementGroupName = newName))
+                }
+            }
+        }
+    }
+
+    private fun mapToUiModels(transactions: List<Transaction>): List<TransactionUiModel> {
+        val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+        val dateFormatter = SimpleDateFormat("dd MMM", Locale.getDefault())
+        val timeFormatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+        val groupKeyFormatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+        
+        val now = System.currentTimeMillis()
+        val today = groupKeyFormatter.format(Date(now))
+        val yesterday = groupKeyFormatter.format(Date(now - 24 * 60 * 60 * 1000))
+
+        return transactions.map { txn ->
             val date = Date(txn.date)
             val gKey = groupKeyFormatter.format(date)
             val dateLabel = when (gKey) {
@@ -95,19 +270,7 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
                 originalTransaction = txn
             )
         }
-
-        DashboardUiState(
-            income = income ?: 0.0,
-            expense = expense ?: 0.0,
-            netBalance = (income ?: 0.0) - (expense ?: 0.0),
-            recentTransactions = mappedTransactions,
-            isReady = true
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = DashboardUiState()
-    )
+    }
 
     // Legacy fields kept for compatibility during migration, but ideally replaced by dashboardState
     val totalIncome = repository.getTotalIncome()

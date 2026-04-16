@@ -16,5 +16,7 @@ data class Transaction(
     val date: Long, // User-selected date (Midnight timestamp)
     val note: String? = null,
     val reference: String? = null,
+    val statementGroupId: String? = null,
+    val statementGroupName: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

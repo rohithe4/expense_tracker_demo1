@@ -39,6 +39,12 @@ interface ExpenseDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: Int): Transaction?
 
+    @Query("SELECT * FROM transactions WHERE statementGroupId = :groupId ORDER BY date DESC")
+    fun getTransactionsByGroupId(groupId: String): Flow<List<Transaction>>
+
+    @Query("DELETE FROM transactions WHERE statementGroupId = :groupId")
+    suspend fun deleteTransactionsByGroupId(groupId: String)
+
     @Query("SELECT SUM(amount) FROM transactions WHERE type = 1")
     fun getTotalIncome(): Flow<Double?>
 

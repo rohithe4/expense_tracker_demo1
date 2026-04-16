@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.expensetrackerdemo.data.model.Template
 import com.example.expensetrackerdemo.data.model.Transaction
 
-@Database(entities = [Template::class, Transaction::class], version = 2, exportSchema = false)
+@Database(entities = [Template::class, Transaction::class], version = 3, exportSchema = false)
 abstract class ExpenseDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 

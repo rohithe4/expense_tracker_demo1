@@ -114,7 +114,7 @@ fun TransactionSuccessToast(
                     modifier = Modifier
                         .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Status Icon
                     Box(
