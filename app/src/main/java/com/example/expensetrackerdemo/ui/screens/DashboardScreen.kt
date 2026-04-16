@@ -3,6 +3,7 @@ package com.example.expensetrackerdemo.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,7 +32,12 @@ import com.example.expensetrackerdemo.ui.viewmodel.TransactionSuccessType
 import com.example.expensetrackerdemo.ui.viewmodel.TransactionUiModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
+import androidx.compose.material.icons.Icons
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.ui.platform.LocalContext
+import com.example.expensetrackerdemo.util.PdfImportHelper
 @Composable
 fun DashboardScreen(
     viewModel: ExpenseViewModel,
@@ -56,6 +62,40 @@ fun DashboardScreen(
     val rawPullOffset = remember { mutableFloatStateOf(0f) }
     var releaseInertialTrigger by remember { mutableLongStateOf(0L) }
     val pullThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
+    
+    val context = LocalContext.current
+    var showImportPreview by remember { mutableStateOf(false) }
+    var importedTransactions by remember { mutableStateOf<List<com.example.expensetrackerdemo.data.model.Transaction>>(emptyList()) }
+    var isImporting by remember { mutableStateOf(false) }
+
+    val pdfPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let { 
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                isImporting = true
+                coroutineScope.launch {
+                    val parsed = PdfImportHelper.parsePdf(context, it)
+                    isImporting = false
+                    if (parsed.isNotEmpty()) {
+                        importedTransactions = parsed as List<com.example.expensetrackerdemo.data.model.Transaction>
+                        showImportPreview = true
+                    } else {
+                        snackbarHostState.showSnackbar(
+                            message = "Could not extract transactions from PDF"
+                        )
+                    }
+                }
+            }
+        }
+    )
     
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -213,6 +253,7 @@ fun DashboardScreen(
                                 income = uiState.income,
                                 expense = uiState.expense,
                                 onAddTransactionClick = onNavigateToAddTransaction,
+                                onImportClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
                                 releaseInertialTrigger = releaseInertialTrigger
                             )
                         } else {
@@ -254,6 +295,131 @@ fun DashboardScreen(
                 type = transactionSuccess,
                 onDismiss = { viewModel.clearTransactionSuccess() }
             )
+
+            if (isImporting) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable(enabled = false) {}, // absorb clicks
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = ColorSurface,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(color = ColorPrimaryLight, modifier = Modifier.size(24.dp))
+                            Text(text = "Parsing statement...", style = BodyLg)
+                        }
+                    }
+                }
+            }
+
+            if (showImportPreview) {
+                AlertDialog(
+                    onDismissRequest = { showImportPreview = false },
+                    title = { Text("Review Import", style = BodyLg.copy(fontWeight = FontWeight.Bold)) },
+                    text = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 400.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Found ${importedTransactions.size} transactions.",
+                                style = BodySm.copy(color = ColorTextMuted)
+                            )
+                            importedTransactions.forEach { txn ->
+                                val isIncome = txn.type == 1
+                                val color = if (isIncome) ColorSuccess else ColorText
+                                val amountPrefix = if (isIncome) "+" else "-"
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = txn.name, style = BodySm.copy(fontWeight = FontWeight.Bold))
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Box {
+                                            var expanded by remember { mutableStateOf(false) }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.clickable { expanded = true }
+                                            ) {
+                                                Text(text = txn.category, style = MetaSm.copy(color = ColorPrimaryLight))
+                                                Icon(
+                                                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
+                                                    contentDescription = "Edit Category",
+                                                    tint = ColorPrimaryLight,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                            DropdownMenu(
+                                                expanded = expanded,
+                                                onDismissRequest = { expanded = false },
+                                                modifier = Modifier.background(ColorSurface2)
+                                            ) {
+                                                val categories = listOf(
+                                                    "Food", "Travel/Transport", "Groceries", "Shopping", 
+                                                    "Bills & Utilities", "Entertainment/Subs", "Health", 
+                                                    "Home/Rent", "Loans/EMI", "Salary", "Personal", "Donations", "Other"
+                                                )
+                                                categories.forEach { cat ->
+                                                    DropdownMenuItem(
+                                                        text = { Text(cat, style = BodySm, color = ColorText) },
+                                                        onClick = {
+                                                            val newList = importedTransactions.toMutableList()
+                                                            val index = newList.indexOf(txn)
+                                                            if (index != -1) {
+                                                                newList[index] = txn.copy(category = cat)
+                                                                importedTransactions = newList
+                                                            }
+                                                            expanded = false
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Text(
+                                        text = "$amountPrefix${txn.amount}",
+                                        style = BodySm.copy(color = color, fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ColorBorder))
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            importedTransactions.forEach { viewModel.addTransaction(it) }
+                            showImportPreview = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Imported ${importedTransactions.size} transactions")
+                            }
+                        }) {
+                            Text("Save All", style = ButtonSm, color = ColorPrimaryLight)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showImportPreview = false }) {
+                            Text("Cancel", style = ButtonSm, color = ColorTextMuted)
+                        }
+                    },
+                    containerColor = ColorSurface,
+                    titleContentColor = ColorText,
+                    textContentColor = ColorText
+                )
+            }
         }
     }
 }

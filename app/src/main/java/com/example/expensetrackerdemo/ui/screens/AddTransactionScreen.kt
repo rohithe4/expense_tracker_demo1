@@ -154,7 +154,7 @@ fun AddTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Edit Transaction" else "Log Transaction", style = BodyLg.copy(fontWeight = FontWeight.Bold)) },
+                title = { Text(if (isEditMode) "Edit Transaction" else "Add Transaction", style = BodyLg.copy(fontWeight = FontWeight.Bold)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -170,7 +170,7 @@ fun AddTransactionScreen(
             ) {
                 Box(modifier = Modifier.padding(20.dp)) {
                     AppButton(
-                        text = if (isEditMode) "Update Transaction" else "Save Transaction",
+                        text = if (isEditMode) "Update Transaction" else "Create Transaction",
                         onClick = {
                             val parsedAmount = amount.toDoubleOrNull()
                             if (parsedAmount != null && parsedAmount > 0 && name.isNotBlank()) {
@@ -494,7 +494,7 @@ private fun SmartDateField(
                 value = dateLabel,
                 onValueChange = {},
                 readOnly = true,
-                placeholder = { Text("Select date", style = BodyLg.copy(color = ColorTextMuted)) },
+                placeholder = { Text("Select date", style = BodyLg.copy(color = ColorTextMuted.copy(alpha = 0.5f))) },
                 trailingIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 4.dp)) {
                         IconButton(onClick = {
@@ -570,7 +570,7 @@ private fun DetailDropdown(
                 value = value,
                 onValueChange = {},
                 readOnly = true,
-                placeholder = { Text(placeholder, style = BodyLg.copy(color = ColorTextMuted)) },
+                placeholder = { Text(placeholder, style = BodyLg.copy(color = ColorTextMuted.copy(alpha = 0.5f))) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                 shape = RoundedCornerShape(16.dp),
@@ -615,7 +615,7 @@ private fun DetailInput(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, style = BodyLg.copy(color = ColorTextMuted)) },
+            placeholder = { Text(placeholder, style = BodyLg.copy(color = ColorTextMuted.copy(alpha = 0.5f))) },
             modifier = Modifier.fillMaxWidth().then(if (isMultiline) Modifier.height(110.dp) else Modifier),
             shape = RoundedCornerShape(16.dp),
             singleLine = !isMultiline,

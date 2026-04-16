@@ -87,7 +87,14 @@ fun HomeHeroCardSkeleton(
                 }
             }
             
-            ShimmerItem(modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                ShimmerItem(modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp))
+                ShimmerItem(modifier = Modifier.size(48.dp), shape = RoundedCornerShape(16.dp))
+            }
         }
     }
 }

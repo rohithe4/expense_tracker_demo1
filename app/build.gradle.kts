@@ -77,4 +77,10 @@ dependencies {
 
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // PDF Parsing
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    
+    // OCR
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
 }

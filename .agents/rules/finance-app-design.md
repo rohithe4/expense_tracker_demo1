@@ -24,6 +24,36 @@ Apply these design rules to every screen unless I explicitly override them.
 - Keep labels small and neat.
 - Keep headings clear and bold.
 - Avoid random font sizes.
+Use simple, consistent finance language throughout the app.
+
+## Rules
+- Use the same term everywhere for the same concept.
+- Prefer plain English over jargon.
+- Keep labels short, clear, and easy to understand.
+- Do not introduce alternate names for the same thing.
+- Reuse the app's chosen terms in UI text, docs, prompts, and code comments.
+
+## Examples
+- Use one term for money added: `Income` or `Credit`, not both unless the difference is intentional.
+- Use one term for money spent: `Expense` or `Debit`, not both unless the difference is intentional.
+- Use one term for total available money: `Balance` or `Net Income`, not both unless the difference is intentional.
+- Use one term for categories: `Category`, not `Tag` / `Type` / `Label` mixed randomly.
+
+## Writing Standard
+- If a finance term is technical, pair it with a plain explanation the first time it appears.
+- Do not rename terms casually in different screens.
+- If a new term is needed, add it to the glossary before using it.
+
+## Review Check
+Before submitting any UI text, prompt, or code:
+- Is the term already used elsewhere in the app?
+- Is it simple enough for a first-time user?
+- Will this confuse income vs expense, credit vs debit, or balance vs total?
+- Did I keep the wording identical across the app?
+
+## Priority
+Consistency > Cleverness.
+Clarity > Finance jargon.
 
 ## Components
 - Prefer rounded corners and clean card containers.

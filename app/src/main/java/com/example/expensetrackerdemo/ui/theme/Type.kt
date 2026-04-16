@@ -72,8 +72,8 @@ val DisplayMd = TextStyle(
 val TitleLg = TextStyle(
     fontFamily = Figtree,
     fontWeight = FontWeight.SemiBold, // 600
-    fontSize = 28.sp,
-    lineHeight = 33.6.sp,
+    fontSize = 24.sp,
+    lineHeight = 28.8.sp,
     letterSpacing = (-0.02).em,
     color = Color.Black
 )
@@ -88,7 +88,7 @@ val TitleMd = TextStyle( // Used for side balances
     color = Color.Black
 )
 
-val TitleSm = TextStyle( // Used for "Net Balance"
+val TitleSm = TextStyle( // Used for "Total Balance"
     fontFamily = Figtree,
     fontWeight = FontWeight.Medium, // 500 (Other texts)
     fontSize = 18.sp,
@@ -101,8 +101,8 @@ val TitleSm = TextStyle( // Used for "Net Balance"
 val BodyLg = TextStyle(
     fontFamily = Figtree,
     fontWeight = FontWeight.Medium, // 500 (Other texts)
-    fontSize = 18.sp,
-    lineHeight = 27.sp,
+    fontSize = 16.sp,
+    lineHeight = 24.sp,
     color = ColorText
 )
 
@@ -172,8 +172,8 @@ val MetaMd = TextStyle( // INCOMING / OUTGOING
 val MetaSm = TextStyle(
     fontFamily = Figtree,
     fontWeight = FontWeight.Medium, // 500
-    fontSize = 12.sp,
-    lineHeight = 15.6.sp,
+    fontSize = 11.sp,
+    lineHeight = 14.3.sp,
     letterSpacing = 0.12.em,
     color = ColorTextMuted
 )

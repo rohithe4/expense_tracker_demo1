@@ -14,7 +14,7 @@
 
 ---
 
-## 📝 Log Transaction (`AddTransactionScreen.kt`)
+## 📝 Add Transaction (`AddTransactionScreen.kt`)
 **Purpose**: High-speed, high-fidelity data entry.
 
 ### Layout Logic

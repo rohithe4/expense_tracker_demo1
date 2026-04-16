@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ fun HomeHeroCard(
     income: Double,
     expense: Double,
     onAddTransactionClick: () -> Unit,
+    onImportClick: () -> Unit = {},
     releaseInertialTrigger: Long = 0L,
     modifier: Modifier = Modifier
 ) {
@@ -82,7 +85,7 @@ fun HomeHeroCard(
                 // Top Content: Summary amount
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "NET INCOME",
+                        text = "TOTAL BALANCE",
                         style = HeroOverline
                     )
                     RollingCounter(
@@ -118,14 +121,37 @@ fun HomeHeroCard(
                     )
                 }
 
-                // Bottom Content: Integrated Action Button
-                AppButton(
-                    text = "Add transaction",
-                    onClick = onAddTransactionClick,
-                    style = AppButtonStyle.Secondary,
-                    leadingIcon = Icons.Default.Add,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Bottom Content: Integrated Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppButton(
+                        text = "Add transaction",
+                        onClick = onAddTransactionClick,
+                        style = AppButtonStyle.Secondary,
+                        leadingIcon = Icons.Default.Add,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Surface(
+                        onClick = onImportClick,
+                        shape = RoundedCornerShape(16.dp),
+                        color = ColorSurface2,
+                        border = BorderStroke(1.dp, ColorDivider),
+                        modifier = Modifier.size(48.dp) // Match height of standard button
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = "Import Statement",
+                                tint = ColorText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

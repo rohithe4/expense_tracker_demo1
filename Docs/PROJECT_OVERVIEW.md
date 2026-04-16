@@ -5,7 +5,7 @@ The **Expense Tracker Demo** is a minimalist personal finance application design
 
 ## 🚶‍♂️ Core User Flow
 1. **View Dashboard**: Check net balance, see categorized income/expense bars.
-2. **Log Transaction**: High-speed entry using custom numeric keypad and rolling counter feedback.
+2. **Add Transaction**: High-speed entry using custom numeric keypad and rolling counter feedback.
 3. **Manage Templates**: Quickly re-use transaction patterns (e.g., "Daily Lunch", "Rent").
 4. **Edit/Delete**: Long-press or swipe to manage transactions with immediate undo capability.
 
