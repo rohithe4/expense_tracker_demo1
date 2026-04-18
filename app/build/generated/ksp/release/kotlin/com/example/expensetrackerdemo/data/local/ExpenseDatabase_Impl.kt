@@ -33,13 +33,13 @@ public class ExpenseDatabase_Impl : ExpenseDatabase() {
 
 
   protected override fun createOpenDelegate(): RoomOpenDelegate {
-    val _openDelegate: RoomOpenDelegate = object : RoomOpenDelegate(2,
-        "6e40cbcaa35fd9840abf5879766df80d", "d2fca5b8fcdd271c8e026cd0cd8e280c") {
+    val _openDelegate: RoomOpenDelegate = object : RoomOpenDelegate(3,
+        "d7f8558fa1b3081cdabffc0cc1ebed8d", "d49dbfc340c9093b23cb36caa1b9d238") {
       public override fun createAllTables(connection: SQLiteConnection) {
         connection.execSQL("CREATE TABLE IF NOT EXISTS `templates` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `category` TEXT NOT NULL, `sampleText` TEXT NOT NULL, `type` INTEGER NOT NULL)")
-        connection.execSQL("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `templateId` INTEGER, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `type` INTEGER NOT NULL, `category` TEXT NOT NULL, `source` TEXT NOT NULL, `date` INTEGER NOT NULL, `note` TEXT, `reference` TEXT, `createdAt` INTEGER NOT NULL)")
+        connection.execSQL("CREATE TABLE IF NOT EXISTS `transactions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `templateId` INTEGER, `name` TEXT NOT NULL, `amount` REAL NOT NULL, `type` INTEGER NOT NULL, `category` TEXT NOT NULL, `source` TEXT NOT NULL, `date` INTEGER NOT NULL, `note` TEXT, `reference` TEXT, `statementGroupId` TEXT, `statementGroupName` TEXT, `createdAt` INTEGER NOT NULL)")
         connection.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
-        connection.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6e40cbcaa35fd9840abf5879766df80d')")
+        connection.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd7f8558fa1b3081cdabffc0cc1ebed8d')")
       }
 
       public override fun dropAllTables(connection: SQLiteConnection) {
@@ -109,6 +109,10 @@ public class ExpenseDatabase_Impl : ExpenseDatabase() {
             TableInfo.CREATED_FROM_ENTITY))
         _columnsTransactions.put("reference", TableInfo.Column("reference", "TEXT", false, 0, null,
             TableInfo.CREATED_FROM_ENTITY))
+        _columnsTransactions.put("statementGroupId", TableInfo.Column("statementGroupId", "TEXT",
+            false, 0, null, TableInfo.CREATED_FROM_ENTITY))
+        _columnsTransactions.put("statementGroupName", TableInfo.Column("statementGroupName",
+            "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY))
         _columnsTransactions.put("createdAt", TableInfo.Column("createdAt", "INTEGER", true, 0,
             null, TableInfo.CREATED_FROM_ENTITY))
         val _foreignKeysTransactions: MutableSet<TableInfo.ForeignKey> = mutableSetOf()

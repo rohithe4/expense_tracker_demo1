@@ -6,11 +6,11 @@ import androidx.compose.ui.graphics.Color
 val ColorBg = Color(0xFFEFEFED)
 val ColorSurface = Color(0xFFFFFFFF)
 val ColorSurface2 = Color(0xFFF7F6F4)
-val ColorDivider = Color(0xFFE8E6E2)
+val ColorDivider = Color(0xFFEAECF0)
 val ColorBorder = Color(0x12000000) // rgba(0,0,0,0.07)
 
 // Button System Colors
-val ColorButtonPrimary = Color(0xFF111111) // Near-black for main actions
+val ColorButtonPrimary = Color(0xFF1C1C1C) // Soft black for main actions
 val ColorButtonDisabled = Color(0xFFF3F2F1) // Soft neutral for inactive buttons
 val ColorButtonSecondaryBorder = Color(0xFFE8E6E2)
 

@@ -9,7 +9,6 @@
     bootClassPath="C:\Users\ROHITH\AppData\Local\Android\Sdk\platforms\android-36\android.jar;C:\Users\ROHITH\AppData\Local\Android\Sdk\build-tools\36.0.0\core-lambda-stubs.jar"
     javaSourceLevel="11"
     compileTarget="android-36"
-    neverShrinking="true"
     highlightGradualR8Api="false">
   <lintOptions
       abortOnError="true"

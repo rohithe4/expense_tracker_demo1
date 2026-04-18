@@ -16,6 +16,6 @@
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# PDFBox-Android
+-dontwarn com.tom_roush.pdfbox.filter.JPXFilter
+-dontwarn com.gemalto.jp2.JP2Decoder

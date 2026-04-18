@@ -205,7 +205,17 @@ fun DashboardScreen(
                                 income = uiState.income,
                                 expense = uiState.expense,
                                 onAddTransactionClick = onNavigateToAddTransaction,
-                                onImportClick = { pdfPickerLauncher.launch(arrayOf("application/pdf")) },
+                                onImportClick = { 
+                                    pdfPickerLauncher.launch(
+                                        arrayOf(
+                                            "application/pdf", 
+                                            "text/csv", 
+                                            "text/comma-separated-values",
+                                            "application/vnd.ms-excel",
+                                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                        )
+                                    ) 
+                                },
                                 releaseInertialTrigger = releaseInertialTrigger
                             )
                         } else {

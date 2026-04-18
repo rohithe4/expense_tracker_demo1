@@ -634,9 +634,47 @@
       jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlin\kotlin-stdlib\2.2.10\30de6faa127a4a012db8e71bf1b9c0a99b1402b2\kotlin-stdlib-2.2.10.jar"
       resolved="org.jetbrains.kotlin:kotlin-stdlib:2.2.10"/>
   <library
+      name="com.tom-roush:pdfbox-android:2.0.27.0@aar"
+      jars="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9b47b09f68e8facaa1c6e67cca6a1924\workspace\transformed\pdfbox-android-2.0.27.0\jars\classes.jar"
+      resolved="com.tom-roush:pdfbox-android:2.0.27.0"
+      folder="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9b47b09f68e8facaa1c6e67cca6a1924\workspace\transformed\pdfbox-android-2.0.27.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="cz.adaptech.tesseract4android:tesseract4android:4.9.0@aar"
+      jars="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\cd1138090853ff442b8eb7a4a775cd68\workspace\transformed\tesseract4android-4.9.0\jars\classes.jar"
+      resolved="cz.adaptech.tesseract4android:tesseract4android:4.9.0"
+      folder="C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\cd1138090853ff442b8eb7a4a775cd68\workspace\transformed\tesseract4android-4.9.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
       name="org.jetbrains:annotations:23.0.0@jar"
       jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\org.jetbrains\annotations\23.0.0\8cc20c07506ec18e0834947b84a864bfc094484e\annotations-23.0.0.jar"
       resolved="org.jetbrains:annotations:23.0.0"/>
+  <library
+      name="org.bouncycastle:bcpkix-jdk15to18:1.72@jar"
+      jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\org.bouncycastle\bcpkix-jdk15to18\1.72\32faf4d74dbc333fb3a7a6c80c30417cf888fc7a\bcpkix-jdk15to18-1.72.jar"
+      resolved="org.bouncycastle:bcpkix-jdk15to18:1.72"/>
+  <library
+      name="org.bouncycastle:bcutil-jdk15to18:1.72@jar"
+      jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\org.bouncycastle\bcutil-jdk15to18\1.72\74d1589a616f7655a1922d0a773e958e87cd2ea0\bcutil-jdk15to18-1.72.jar"
+      resolved="org.bouncycastle:bcutil-jdk15to18:1.72"/>
+  <library
+      name="org.bouncycastle:bcprov-jdk15to18:1.72@jar"
+      jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\org.bouncycastle\bcprov-jdk15to18\1.72\1c53885369e89f9798974bf63b55a764c54b5c61\bcprov-jdk15to18-1.72.jar"
+      resolved="org.bouncycastle:bcprov-jdk15to18:1.72"/>
   <library
       name="com.google.guava:listenablefuture:1.0@jar"
       jars="C:\Users\ROHITH\.gradle\caches\modules-2\files-2.1\com.google.guava\listenablefuture\1.0\c949a840a6acbc5268d088e47b04177bf90b3cad\listenablefuture-1.0.jar"

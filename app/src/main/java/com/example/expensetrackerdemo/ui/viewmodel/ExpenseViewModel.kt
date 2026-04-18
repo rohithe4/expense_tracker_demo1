@@ -22,6 +22,10 @@ enum class TransactionSuccessType {
     NONE, CREATED, UPDATED
 }
 
+enum class HistoryTab {
+    ALL, TODAY, GROUP
+}
+
 data class TransactionUiModel(
     val id: Int,
     val name: String,
@@ -82,8 +86,15 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val _historyTab = MutableStateFlow(HistoryTab.ALL)
+    val historyTab = _historyTab.asStateFlow()
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun setHistoryTab(tab: HistoryTab) {
+        _historyTab.value = tab
     }
 
     // Consolidated Home Screen State
@@ -108,8 +119,9 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
     // Full history state with filtering and grouping
     val historyItems: StateFlow<List<HistoryItem>> = combine(
         repository.getAllTransactions(),
-        _searchQuery
-    ) { transactions, query ->
+        _searchQuery,
+        _historyTab
+    ) { transactions, query, tab ->
         val result = mutableListOf<HistoryItem>()
         
         // Group by statementGroupId
@@ -121,13 +133,13 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
                 // It's a statement group
                 val first = txns.first()
                 val groupName = first.statementGroupName ?: "Imported Statement"
-                
+
                 // If searching, only include group if it matches OR its transactions match
-                val matchesQuery = query.isEmpty() || 
+                val matchesQuery = query.isEmpty() ||
                     groupName.contains(query, ignoreCase = true) ||
                     txns.any { it.name.contains(query, ignoreCase = true) || it.category.contains(query, ignoreCase = true) }
-                
-                if (matchesQuery) {
+
+                if (matchesQuery && tab != HistoryTab.TODAY) {
                     val total = txns.sumOf { it.amount * it.type }
                     val minDate = txns.minOf { it.date }
                     val maxDate = txns.maxOf { it.date }
@@ -150,12 +162,20 @@ class ExpenseViewModel(private val repository: ExpenseRepository) : ViewModel() 
             } else {
                 // These are individual transactions (not part of any statement)
                 txns.forEach { txn ->
-                    val matchesQuery = query.isEmpty() || 
-                        txn.name.contains(query, ignoreCase = true) || 
+                    val matchesQuery = query.isEmpty() ||
+                        txn.name.contains(query, ignoreCase = true) ||
                         txn.category.contains(query, ignoreCase = true)
-                    
-                    if (matchesQuery) {
-                        individualTransactions.add(txn)
+
+                    if (matchesQuery && tab != HistoryTab.GROUP) {
+                        if (tab == HistoryTab.TODAY) {
+                            val groupKeyFormatter = SimpleDateFormat("yyyyMMdd", Locale.getDefault())
+                            val today = groupKeyFormatter.format(Date())
+                            if (groupKeyFormatter.format(Date(txn.date)) == today) {
+                                individualTransactions.add(txn)
+                            }
+                        } else {
+                            individualTransactions.add(txn)
+                        }
                     }
                 }
             }

@@ -48,6 +48,7 @@ MERGED from [androidx.core:core-ktx:1.18.0] C:\Users\ROHITH\.gradle\caches\9.3.1
 MERGED from [androidx.room:room-runtime-android:2.7.0-alpha11] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\e68d62a1b63b4c14a8e993a10a5056d5\workspace\transformed\room-runtime-release\AndroidManifest.xml:17:1-31:12
 MERGED from [androidx.room:room-ktx:2.7.0-alpha11] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\ed01e86c74320e1c2d3af8d4be1f49f9\workspace\transformed\room-ktx-2.7.0-alpha11\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\73bb65bd51a821f2d031d23ebc6da942\workspace\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:17:1-24:12
+MERGED from [cz.adaptech.tesseract4android:tesseract4android:4.9.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\cd1138090853ff442b8eb7a4a775cd68\workspace\transformed\tesseract4android-4.9.0\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\12eee3368784bb7e0e2ed565eecb0dc4\workspace\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\57218940fab9922d51cb1fcdad1e64e6\workspace\transformed\profileinstaller-1.3.1\AndroidManifest.xml:17:1-55:12
 MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\4c31cda53f60e9f16856b1902f34e6c8\workspace\transformed\startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
@@ -60,6 +61,7 @@ MERGED from [androidx.sqlite:sqlite-framework-android:2.5.0-alpha11] C:\Users\RO
 MERGED from [androidx.sqlite:sqlite-android:2.5.0-alpha11] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\edd65716acefcd858f0b154139a964c6\workspace\transformed\sqlite\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\91f3c1b993f6cf6a72224a3ab334a07a\workspace\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\ac1a9306b838375553cb915a0484d0fe\workspace\transformed\core-viewtree-1.0.0\AndroidManifest.xml:2:1-7:12
+MERGED from [com.tom-roush:pdfbox-android:2.0.27.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9b47b09f68e8facaa1c6e67cca6a1924\workspace\transformed\pdfbox-android-2.0.27.0\AndroidManifest.xml:2:1-9:12
 	package
 		INJECTED from C:\Users\ROHITH\AndroidStudioProjects\ExpenseTrackerDemo\app\src\main\AndroidManifest.xml
 	android:versionName
@@ -219,6 +221,8 @@ MERGED from [androidx.room:room-ktx:2.7.0-alpha11] C:\Users\ROHITH\.gradle\cache
 MERGED from [androidx.room:room-ktx:2.7.0-alpha11] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\ed01e86c74320e1c2d3af8d4be1f49f9\workspace\transformed\room-ktx-2.7.0-alpha11\AndroidManifest.xml:20:5-44
 MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\73bb65bd51a821f2d031d23ebc6da942\workspace\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.core:core-splashscreen:1.0.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\73bb65bd51a821f2d031d23ebc6da942\workspace\transformed\core-splashscreen-1.0.1\AndroidManifest.xml:20:5-22:41
+MERGED from [cz.adaptech.tesseract4android:tesseract4android:4.9.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\cd1138090853ff442b8eb7a4a775cd68\workspace\transformed\tesseract4android-4.9.0\AndroidManifest.xml:5:5-44
+MERGED from [cz.adaptech.tesseract4android:tesseract4android:4.9.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\cd1138090853ff442b8eb7a4a775cd68\workspace\transformed\tesseract4android-4.9.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\12eee3368784bb7e0e2ed565eecb0dc4\workspace\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\12eee3368784bb7e0e2ed565eecb0dc4\workspace\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\57218940fab9922d51cb1fcdad1e64e6\workspace\transformed\profileinstaller-1.3.1\AndroidManifest.xml:21:5-44
@@ -243,6 +247,8 @@ MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\ROHITH\
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\91f3c1b993f6cf6a72224a3ab334a07a\workspace\transformed\annotation-experimental-1.4.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\ac1a9306b838375553cb915a0484d0fe\workspace\transformed\core-viewtree-1.0.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-viewtree:1.0.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\ac1a9306b838375553cb915a0484d0fe\workspace\transformed\core-viewtree-1.0.0\AndroidManifest.xml:5:5-44
+MERGED from [com.tom-roush:pdfbox-android:2.0.27.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9b47b09f68e8facaa1c6e67cca6a1924\workspace\transformed\pdfbox-android-2.0.27.0\AndroidManifest.xml:5:5-7:41
+MERGED from [com.tom-roush:pdfbox-android:2.0.27.0] C:\Users\ROHITH\.gradle\caches\9.3.1\transforms\9b47b09f68e8facaa1c6e67cca6a1924\workspace\transformed\pdfbox-android-2.0.27.0\AndroidManifest.xml:5:5-7:41
 	android:targetSdkVersion
 		INJECTED from C:\Users\ROHITH\AndroidStudioProjects\ExpenseTrackerDemo\app\src\main\AndroidManifest.xml
 	android:minSdkVersion

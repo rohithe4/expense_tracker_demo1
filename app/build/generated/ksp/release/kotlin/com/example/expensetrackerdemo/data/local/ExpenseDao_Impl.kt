@@ -52,7 +52,7 @@ public class ExpenseDao_Impl(
     }
     this.__insertAdapterOfTransaction = object : EntityInsertAdapter<Transaction>() {
       protected override fun createQuery(): String =
-          "INSERT OR ABORT INTO `transactions` (`id`,`templateId`,`name`,`amount`,`type`,`category`,`source`,`date`,`note`,`reference`,`createdAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?)"
+          "INSERT OR ABORT INTO `transactions` (`id`,`templateId`,`name`,`amount`,`type`,`category`,`source`,`date`,`note`,`reference`,`statementGroupId`,`statementGroupName`,`createdAt`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?)"
 
       protected override fun bind(statement: SQLiteStatement, entity: Transaction) {
         statement.bindLong(1, entity.id.toLong())
@@ -80,7 +80,19 @@ public class ExpenseDao_Impl(
         } else {
           statement.bindText(10, _tmpReference)
         }
-        statement.bindLong(11, entity.createdAt)
+        val _tmpStatementGroupId: String? = entity.statementGroupId
+        if (_tmpStatementGroupId == null) {
+          statement.bindNull(11)
+        } else {
+          statement.bindText(11, _tmpStatementGroupId)
+        }
+        val _tmpStatementGroupName: String? = entity.statementGroupName
+        if (_tmpStatementGroupName == null) {
+          statement.bindNull(12)
+        } else {
+          statement.bindText(12, _tmpStatementGroupName)
+        }
+        statement.bindLong(13, entity.createdAt)
       }
     }
     this.__deleteAdapterOfTransaction = object : EntityDeleteOrUpdateAdapter<Transaction>() {
@@ -92,7 +104,7 @@ public class ExpenseDao_Impl(
     }
     this.__updateAdapterOfTransaction = object : EntityDeleteOrUpdateAdapter<Transaction>() {
       protected override fun createQuery(): String =
-          "UPDATE OR ABORT `transactions` SET `id` = ?,`templateId` = ?,`name` = ?,`amount` = ?,`type` = ?,`category` = ?,`source` = ?,`date` = ?,`note` = ?,`reference` = ?,`createdAt` = ? WHERE `id` = ?"
+          "UPDATE OR ABORT `transactions` SET `id` = ?,`templateId` = ?,`name` = ?,`amount` = ?,`type` = ?,`category` = ?,`source` = ?,`date` = ?,`note` = ?,`reference` = ?,`statementGroupId` = ?,`statementGroupName` = ?,`createdAt` = ? WHERE `id` = ?"
 
       protected override fun bind(statement: SQLiteStatement, entity: Transaction) {
         statement.bindLong(1, entity.id.toLong())
@@ -120,8 +132,20 @@ public class ExpenseDao_Impl(
         } else {
           statement.bindText(10, _tmpReference)
         }
-        statement.bindLong(11, entity.createdAt)
-        statement.bindLong(12, entity.id.toLong())
+        val _tmpStatementGroupId: String? = entity.statementGroupId
+        if (_tmpStatementGroupId == null) {
+          statement.bindNull(11)
+        } else {
+          statement.bindText(11, _tmpStatementGroupId)
+        }
+        val _tmpStatementGroupName: String? = entity.statementGroupName
+        if (_tmpStatementGroupName == null) {
+          statement.bindNull(12)
+        } else {
+          statement.bindText(12, _tmpStatementGroupName)
+        }
+        statement.bindLong(13, entity.createdAt)
+        statement.bindLong(14, entity.id.toLong())
       }
     }
   }
@@ -196,6 +220,9 @@ public class ExpenseDao_Impl(
         val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_stmt, "date")
         val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_stmt, "note")
         val _cursorIndexOfReference: Int = getColumnIndexOrThrow(_stmt, "reference")
+        val _cursorIndexOfStatementGroupId: Int = getColumnIndexOrThrow(_stmt, "statementGroupId")
+        val _cursorIndexOfStatementGroupName: Int = getColumnIndexOrThrow(_stmt,
+            "statementGroupName")
         val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_stmt, "createdAt")
         val _result: MutableList<Transaction> = mutableListOf()
         while (_stmt.step()) {
@@ -232,10 +259,22 @@ public class ExpenseDao_Impl(
           } else {
             _tmpReference = _stmt.getText(_cursorIndexOfReference)
           }
+          val _tmpStatementGroupId: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupId)) {
+            _tmpStatementGroupId = null
+          } else {
+            _tmpStatementGroupId = _stmt.getText(_cursorIndexOfStatementGroupId)
+          }
+          val _tmpStatementGroupName: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupName)) {
+            _tmpStatementGroupName = null
+          } else {
+            _tmpStatementGroupName = _stmt.getText(_cursorIndexOfStatementGroupName)
+          }
           val _tmpCreatedAt: Long
           _tmpCreatedAt = _stmt.getLong(_cursorIndexOfCreatedAt)
           _item =
-              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpCreatedAt)
+              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpStatementGroupId,_tmpStatementGroupName,_tmpCreatedAt)
           _result.add(_item)
         }
         _result
@@ -262,6 +301,9 @@ public class ExpenseDao_Impl(
         val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_stmt, "date")
         val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_stmt, "note")
         val _cursorIndexOfReference: Int = getColumnIndexOrThrow(_stmt, "reference")
+        val _cursorIndexOfStatementGroupId: Int = getColumnIndexOrThrow(_stmt, "statementGroupId")
+        val _cursorIndexOfStatementGroupName: Int = getColumnIndexOrThrow(_stmt,
+            "statementGroupName")
         val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_stmt, "createdAt")
         val _result: MutableList<Transaction> = mutableListOf()
         while (_stmt.step()) {
@@ -298,10 +340,22 @@ public class ExpenseDao_Impl(
           } else {
             _tmpReference = _stmt.getText(_cursorIndexOfReference)
           }
+          val _tmpStatementGroupId: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupId)) {
+            _tmpStatementGroupId = null
+          } else {
+            _tmpStatementGroupId = _stmt.getText(_cursorIndexOfStatementGroupId)
+          }
+          val _tmpStatementGroupName: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupName)) {
+            _tmpStatementGroupName = null
+          } else {
+            _tmpStatementGroupName = _stmt.getText(_cursorIndexOfStatementGroupName)
+          }
           val _tmpCreatedAt: Long
           _tmpCreatedAt = _stmt.getLong(_cursorIndexOfCreatedAt)
           _item =
-              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpCreatedAt)
+              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpStatementGroupId,_tmpStatementGroupName,_tmpCreatedAt)
           _result.add(_item)
         }
         _result
@@ -326,6 +380,9 @@ public class ExpenseDao_Impl(
         val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_stmt, "date")
         val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_stmt, "note")
         val _cursorIndexOfReference: Int = getColumnIndexOrThrow(_stmt, "reference")
+        val _cursorIndexOfStatementGroupId: Int = getColumnIndexOrThrow(_stmt, "statementGroupId")
+        val _cursorIndexOfStatementGroupName: Int = getColumnIndexOrThrow(_stmt,
+            "statementGroupName")
         val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_stmt, "createdAt")
         val _result: MutableList<Transaction> = mutableListOf()
         while (_stmt.step()) {
@@ -362,10 +419,22 @@ public class ExpenseDao_Impl(
           } else {
             _tmpReference = _stmt.getText(_cursorIndexOfReference)
           }
+          val _tmpStatementGroupId: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupId)) {
+            _tmpStatementGroupId = null
+          } else {
+            _tmpStatementGroupId = _stmt.getText(_cursorIndexOfStatementGroupId)
+          }
+          val _tmpStatementGroupName: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupName)) {
+            _tmpStatementGroupName = null
+          } else {
+            _tmpStatementGroupName = _stmt.getText(_cursorIndexOfStatementGroupName)
+          }
           val _tmpCreatedAt: Long
           _tmpCreatedAt = _stmt.getLong(_cursorIndexOfCreatedAt)
           _item =
-              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpCreatedAt)
+              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpStatementGroupId,_tmpStatementGroupName,_tmpCreatedAt)
           _result.add(_item)
         }
         _result
@@ -392,6 +461,9 @@ public class ExpenseDao_Impl(
         val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_stmt, "date")
         val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_stmt, "note")
         val _cursorIndexOfReference: Int = getColumnIndexOrThrow(_stmt, "reference")
+        val _cursorIndexOfStatementGroupId: Int = getColumnIndexOrThrow(_stmt, "statementGroupId")
+        val _cursorIndexOfStatementGroupName: Int = getColumnIndexOrThrow(_stmt,
+            "statementGroupName")
         val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_stmt, "createdAt")
         val _result: Transaction?
         if (_stmt.step()) {
@@ -427,12 +499,105 @@ public class ExpenseDao_Impl(
           } else {
             _tmpReference = _stmt.getText(_cursorIndexOfReference)
           }
+          val _tmpStatementGroupId: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupId)) {
+            _tmpStatementGroupId = null
+          } else {
+            _tmpStatementGroupId = _stmt.getText(_cursorIndexOfStatementGroupId)
+          }
+          val _tmpStatementGroupName: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupName)) {
+            _tmpStatementGroupName = null
+          } else {
+            _tmpStatementGroupName = _stmt.getText(_cursorIndexOfStatementGroupName)
+          }
           val _tmpCreatedAt: Long
           _tmpCreatedAt = _stmt.getLong(_cursorIndexOfCreatedAt)
           _result =
-              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpCreatedAt)
+              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpStatementGroupId,_tmpStatementGroupName,_tmpCreatedAt)
         } else {
           _result = null
+        }
+        _result
+      } finally {
+        _stmt.close()
+      }
+    }
+  }
+
+  public override fun getTransactionsByGroupId(groupId: String): Flow<List<Transaction>> {
+    val _sql: String = "SELECT * FROM transactions WHERE statementGroupId = ? ORDER BY date DESC"
+    return createFlow(__db, false, arrayOf("transactions")) { _connection ->
+      val _stmt: SQLiteStatement = _connection.prepare(_sql)
+      try {
+        var _argIndex: Int = 1
+        _stmt.bindText(_argIndex, groupId)
+        val _cursorIndexOfId: Int = getColumnIndexOrThrow(_stmt, "id")
+        val _cursorIndexOfTemplateId: Int = getColumnIndexOrThrow(_stmt, "templateId")
+        val _cursorIndexOfName: Int = getColumnIndexOrThrow(_stmt, "name")
+        val _cursorIndexOfAmount: Int = getColumnIndexOrThrow(_stmt, "amount")
+        val _cursorIndexOfType: Int = getColumnIndexOrThrow(_stmt, "type")
+        val _cursorIndexOfCategory: Int = getColumnIndexOrThrow(_stmt, "category")
+        val _cursorIndexOfSource: Int = getColumnIndexOrThrow(_stmt, "source")
+        val _cursorIndexOfDate: Int = getColumnIndexOrThrow(_stmt, "date")
+        val _cursorIndexOfNote: Int = getColumnIndexOrThrow(_stmt, "note")
+        val _cursorIndexOfReference: Int = getColumnIndexOrThrow(_stmt, "reference")
+        val _cursorIndexOfStatementGroupId: Int = getColumnIndexOrThrow(_stmt, "statementGroupId")
+        val _cursorIndexOfStatementGroupName: Int = getColumnIndexOrThrow(_stmt,
+            "statementGroupName")
+        val _cursorIndexOfCreatedAt: Int = getColumnIndexOrThrow(_stmt, "createdAt")
+        val _result: MutableList<Transaction> = mutableListOf()
+        while (_stmt.step()) {
+          val _item: Transaction
+          val _tmpId: Int
+          _tmpId = _stmt.getLong(_cursorIndexOfId).toInt()
+          val _tmpTemplateId: Int?
+          if (_stmt.isNull(_cursorIndexOfTemplateId)) {
+            _tmpTemplateId = null
+          } else {
+            _tmpTemplateId = _stmt.getLong(_cursorIndexOfTemplateId).toInt()
+          }
+          val _tmpName: String
+          _tmpName = _stmt.getText(_cursorIndexOfName)
+          val _tmpAmount: Double
+          _tmpAmount = _stmt.getDouble(_cursorIndexOfAmount)
+          val _tmpType: Int
+          _tmpType = _stmt.getLong(_cursorIndexOfType).toInt()
+          val _tmpCategory: String
+          _tmpCategory = _stmt.getText(_cursorIndexOfCategory)
+          val _tmpSource: String
+          _tmpSource = _stmt.getText(_cursorIndexOfSource)
+          val _tmpDate: Long
+          _tmpDate = _stmt.getLong(_cursorIndexOfDate)
+          val _tmpNote: String?
+          if (_stmt.isNull(_cursorIndexOfNote)) {
+            _tmpNote = null
+          } else {
+            _tmpNote = _stmt.getText(_cursorIndexOfNote)
+          }
+          val _tmpReference: String?
+          if (_stmt.isNull(_cursorIndexOfReference)) {
+            _tmpReference = null
+          } else {
+            _tmpReference = _stmt.getText(_cursorIndexOfReference)
+          }
+          val _tmpStatementGroupId: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupId)) {
+            _tmpStatementGroupId = null
+          } else {
+            _tmpStatementGroupId = _stmt.getText(_cursorIndexOfStatementGroupId)
+          }
+          val _tmpStatementGroupName: String?
+          if (_stmt.isNull(_cursorIndexOfStatementGroupName)) {
+            _tmpStatementGroupName = null
+          } else {
+            _tmpStatementGroupName = _stmt.getText(_cursorIndexOfStatementGroupName)
+          }
+          val _tmpCreatedAt: Long
+          _tmpCreatedAt = _stmt.getLong(_cursorIndexOfCreatedAt)
+          _item =
+              Transaction(_tmpId,_tmpTemplateId,_tmpName,_tmpAmount,_tmpType,_tmpCategory,_tmpSource,_tmpDate,_tmpNote,_tmpReference,_tmpStatementGroupId,_tmpStatementGroupName,_tmpCreatedAt)
+          _result.add(_item)
         }
         _result
       } finally {
@@ -483,6 +648,20 @@ public class ExpenseDao_Impl(
           _result = null
         }
         _result
+      } finally {
+        _stmt.close()
+      }
+    }
+  }
+
+  public override suspend fun deleteTransactionsByGroupId(groupId: String) {
+    val _sql: String = "DELETE FROM transactions WHERE statementGroupId = ?"
+    return performSuspending(__db, false, true) { _connection ->
+      val _stmt: SQLiteStatement = _connection.prepare(_sql)
+      try {
+        var _argIndex: Int = 1
+        _stmt.bindText(_argIndex, groupId)
+        _stmt.step()
       } finally {
         _stmt.close()
       }

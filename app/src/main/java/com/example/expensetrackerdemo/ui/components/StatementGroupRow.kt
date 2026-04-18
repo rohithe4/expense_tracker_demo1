@@ -62,7 +62,7 @@ fun StatementGroupRow(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         color = ColorSurface,
         border = androidx.compose.foundation.BorderStroke(1.dp, ColorDivider.copy(alpha = 0.5f)),
         shadowElevation = 0.5.dp

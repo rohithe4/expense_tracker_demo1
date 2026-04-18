@@ -8,20 +8,26 @@ plugins {
 android {
     namespace = "com.example.expensetrackerdemo"
     compileSdk = 36
-
     defaultConfig {
         applicationId = "com.example.expensetrackerdemo"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Strip out unnecessary native libraries (x86, x86_64) to save huge amounts of space,
+        // mostly for Tesseract and PDFBox native code
+        ndk {
+            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a"))
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
