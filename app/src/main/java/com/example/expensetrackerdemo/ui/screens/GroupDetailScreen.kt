@@ -42,6 +42,9 @@ fun GroupDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     
+    // Receipt Overlay State
+    var selectedTransactionForReceipt by remember { mutableStateOf<Transaction?>(null) }
+    
     val transactionSuccess by viewModel.transactionSuccess.collectAsState()
 
     LaunchedEffect(transactionSuccess) {
@@ -214,7 +217,13 @@ fun GroupDetailScreen(
                     openTransactionId = openTransactionId,
                     onOpenTransaction = { openTransactionId = it },
                     onClearOpenTransaction = { openTransactionId = null },
-                    onEdit = onNavigateToEditTransaction,
+                    onEdit = { transactionId ->
+                        scope.launch {
+                            viewModel.getTransactionById(transactionId)?.let {
+                                selectedTransactionForReceipt = it
+                            }
+                        }
+                    },
                     onDelete = { item ->
                         val txn = item.originalTransaction
                         viewModel.deleteTransaction(txn)
@@ -238,5 +247,21 @@ fun GroupDetailScreen(
             type = transactionSuccess,
             onDismiss = { viewModel.clearTransactionSuccess() }
         )
+
+        // Receipt Overlay
+        selectedTransactionForReceipt?.let { txn ->
+            TransactionReceiptOverlay(
+                transaction = txn,
+                onDismiss = { selectedTransactionForReceipt = null },
+                onDelete = { 
+                    viewModel.deleteTransaction(txn)
+                    selectedTransactionForReceipt = null
+                },
+                onEdit = { id ->
+                    selectedTransactionForReceipt = null
+                    onNavigateToEditTransaction(id)
+                }
+            )
+        }
     }
 }

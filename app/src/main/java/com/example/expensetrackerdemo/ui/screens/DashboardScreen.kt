@@ -38,6 +38,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.ui.platform.LocalContext
 import com.example.expensetrackerdemo.util.PdfImportHelper
+import android.content.Context
 import java.util.*
 
 @Composable
@@ -62,17 +63,73 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    
+    // Swipe Tour State
+    val sharedPref = remember { context.getSharedPreferences("ExpenseTrackerPrefs", Context.MODE_PRIVATE) }
+    var showSwipeTour by remember { mutableStateOf(false) }
+    var hintTransactionId by remember { mutableStateOf<Int?>(null) }
+    var tourTriggeredByCreation by remember { mutableStateOf(false) }
+
+    // Track when a transaction was created to trigger tour after snackbar dismisses
+    LaunchedEffect(transactionSuccess) {
+        if (transactionSuccess == TransactionSuccessType.CREATED) {
+            tourTriggeredByCreation = true
+        } else if (transactionSuccess == TransactionSuccessType.NONE && tourTriggeredByCreation) {
+            tourTriggeredByCreation = false
+            // Snackbar just finished its 3s display
+            if (uiState.recentTransactions.size == 1) {
+                val hasSeenTour = sharedPref.getBoolean("has_seen_swipe_tour", false)
+                if (!hasSeenTour) {
+                    delay(2500) // Wait 2.5 seconds after snackbar dismisses
+                    showSwipeTour = true
+                    sharedPref.edit().putBoolean("has_seen_swipe_tour", true).apply()
+                }
+            }
+        }
+    }
+
+    // Safety check: if app restarts and first txn exists but tour never shown
+    LaunchedEffect(uiState.recentTransactions.isNotEmpty(), uiState.isReady) {
+        if (uiState.isReady && uiState.recentTransactions.isNotEmpty() && transactionSuccess == TransactionSuccessType.NONE) {
+            val hasSeenTour = sharedPref.getBoolean("has_seen_swipe_tour", false)
+            if (!hasSeenTour && !tourTriggeredByCreation) {
+                // Not showing snackbar currently, can show tour after a short delay
+                delay(1000)
+                showSwipeTour = true
+                sharedPref.edit().putBoolean("has_seen_swipe_tour", true).apply()
+            }
+        }
+    }
+
+    // Trigger hint after tour is closed
+    LaunchedEffect(showSwipeTour) {
+        if (!showSwipeTour && uiState.recentTransactions.isNotEmpty()) {
+            val hasSeenHint = sharedPref.getBoolean("has_seen_swipe_hint", false)
+            if (!hasSeenHint) {
+                val hasSeenTour = sharedPref.getBoolean("has_seen_swipe_tour", false)
+                // Only show hint if tour was shown OR if we missed it
+                if (hasSeenTour) {
+                    hintTransactionId = uiState.recentTransactions.firstOrNull()?.id
+                    sharedPref.edit().putBoolean("has_seen_swipe_hint", true).apply()
+                }
+            }
+        }
+    }
+
     val rawPullOffset = remember { mutableFloatStateOf(0f) }
     var releaseInertialTrigger by remember { mutableLongStateOf(0L) }
     val pullThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
     
-    val context = LocalContext.current
     var showImportPreview by remember { mutableStateOf(false) }
     var importedTransactions by remember { mutableStateOf<List<com.example.expensetrackerdemo.data.model.Transaction>>(emptyList()) }
     var isImporting by remember { mutableStateOf(false) }
 
     var showGroupNamePrompt by remember { mutableStateOf(false) }
     var tempImportedTransactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+    
+    // Receipt Overlay State
+    var selectedTransactionForReceipt by remember { mutableStateOf<Transaction?>(null) }
 
     val pdfPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -240,10 +297,17 @@ fun DashboardScreen(
                             transactions = uiState.recentTransactions,
                             templates = emptyList(), 
                             onViewAllClick = { viewModel.setSearchQuery(""); onNavigateToHistory() },
-                            onEditTransaction = onNavigateToEditTransaction,
+                            onEditTransaction = { transactionId ->
+                                coroutineScope.launch {
+                                    viewModel.getTransactionById(transactionId)?.let {
+                                        selectedTransactionForReceipt = it
+                                    }
+                                }
+                            },
                             onDeleteTransaction = { transaction: Transaction -> viewModel.deleteTransaction(transaction) },
                             onUndoDelete = { transaction: Transaction -> viewModel.addTransaction(transaction) },
-                            snackbarHostState = snackbarHostState
+                            snackbarHostState = snackbarHostState,
+                            hintId = hintTransactionId
                         )
                     } else {
                         RecentTransactionsSkeleton()
@@ -325,6 +389,36 @@ fun DashboardScreen(
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Imported ${importedTransactions.size} transactions")
                         }
+                    }
+                )
+            }
+
+            if (showSwipeTour) {
+                SwipeTourModal(onDismiss = { showSwipeTour = false })
+            }
+
+            // Receipt Overlay
+            selectedTransactionForReceipt?.let { txn ->
+                TransactionReceiptOverlay(
+                    transaction = txn,
+                    onDismiss = { selectedTransactionForReceipt = null },
+                    onDelete = { 
+                        viewModel.deleteTransaction(txn)
+                        selectedTransactionForReceipt = null
+                        coroutineScope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Transaction deleted",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Short
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                viewModel.addTransaction(txn)
+                            }
+                        }
+                    },
+                    onEdit = { id ->
+                        selectedTransactionForReceipt = null
+                        onNavigateToEditTransaction(id)
                     }
                 )
             }

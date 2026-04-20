@@ -152,8 +152,8 @@ fun StatementGroupRow(
                         )
                         
                         val totalAmount = group.totalAmount
-                        Text(
-                            text = (if (totalAmount >= 0) "+" else "-") + currencyFormatter.format(abs(totalAmount)),
+                        TransactionAmountText(
+                            amountText = (if (totalAmount >= 0) "+" else "-") + currencyFormatter.format(abs(totalAmount)),
                             style = ListAmountBold
                         )
                     }

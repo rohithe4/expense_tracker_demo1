@@ -58,7 +58,8 @@ fun RecentTransactionsSection(
     onDeleteTransaction: (Transaction) -> Unit,
     onUndoDelete: (Transaction) -> Unit,
     snackbarHostState: SnackbarHostState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hintId: Int? = null
 ) {
     val scope = rememberCoroutineScope()
 
@@ -139,7 +140,8 @@ fun RecentTransactionsSection(
                                         onUndoDelete(txn)
                                     }
                                 }
-                            }
+                            },
+                            hintId = hintId
                         )
                     }
                 }

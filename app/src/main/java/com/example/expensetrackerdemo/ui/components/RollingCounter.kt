@@ -14,11 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 import java.util.Locale
@@ -38,13 +44,20 @@ fun RollingCounter(
     val formattedValue = remember(value) {
         val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
             currency = Currency.getInstance("INR")
-            val hasDecimal = value % 1.0 != 0.0
-            minimumFractionDigits = if (hasDecimal) 2 else 0
+            minimumFractionDigits = 2
             maximumFractionDigits = 2
         }
         formatter.format(value).replace("₹", "").trim()
     }
     
+    // Split into integer and decimal for conditional rendering
+    val (integerPart, decimalPart) = remember(formattedValue) {
+        val parts = formattedValue.split(".")
+        if (parts.size == 2) parts[0] to parts[1] else formattedValue to ""
+    }
+    
+    val showDecimal = decimalPart.isNotEmpty() && decimalPart != "00"
+
     // Persistent tracking to avoid re-animating on back navigation if nothing changed
     var lastAnimatedValue by rememberSaveable { mutableStateOf<Double?>(null) }
     
@@ -70,21 +83,21 @@ fun RollingCounter(
     
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.Center
     ) {
         // Prefix (e.g., ₹)
         Text(
             text = prefix,
             style = style,
-            modifier = Modifier.padding(end = 2.dp)
+            modifier = Modifier.padding(end = 2.dp, bottom = (style.fontSize.value * 0.05).dp)
         )
         
     // Filter out signs/commas to get true digit indices for staggering
     var numericDigitIndex = 0
-    val totalDigits = formattedValue.count { it.isDigit() }
+    val totalDigits = integerPart.count { it.isDigit() }
     
-    formattedValue.forEach { char ->
+    integerPart.forEach { char ->
         if (char.isDigit()) {
             DigitReel(
                 targetDigit = char.toString().toInt(),
@@ -103,6 +116,33 @@ fun RollingCounter(
                 text = char.toString(),
                 style = style
             )
+        }
+    }
+
+    if (showDecimal) {
+        Text(
+            text = ".", 
+            style = style.copy(fontSize = (style.fontSize.value * 0.8).sp),
+            modifier = Modifier.padding(bottom = (style.fontSize.value * 0.05).dp)
+        )
+        decimalPart.forEach { char ->
+            if (char.isDigit()) {
+                DigitReel(
+                    targetDigit = char.toString().toInt(),
+                    style = style.copy(
+                        fontSize = (style.fontSize.value * 0.55).sp
+                    ),
+                    baseDelayMillis = delayMillis,
+                    durationMillis = currentDuration,
+                    index = numericDigitIndex,
+                    trigger = value,
+                    shouldAnimate = shouldAnimate,
+                    isInitialLoad = isInitialLoad,
+                    releaseInertialTrigger = releaseInertialTrigger,
+                    modifier = Modifier.padding(bottom = (style.fontSize.value * 0.05).dp)
+                )
+                numericDigitIndex++
+            }
         }
     }
 }
@@ -193,10 +233,10 @@ private fun DigitReel(
 
     Box(
         modifier = modifier
-            .height(with(androidx.compose.ui.platform.LocalDensity.current) { style.fontSize.toDp() * 1.3f })
+            .height(with(androidx.compose.ui.platform.LocalDensity.current) { style.fontSize.toDp() * 1.2f })
             .offset(y = inertialOffset.value.dp)
             .clipToBounds(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.BottomCenter
     ) {
         DigitLayout(
             scrollOffset = scrollOffset.value,
